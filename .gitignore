@@ -13,3 +13,6 @@ autom4te.cache/*
 config/*
 stage1_2/*.cc
 stage1_2/*.hh
+/build/
+/.settings/
+/.vscode/
