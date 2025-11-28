@@ -35,6 +35,19 @@
 #define _MAIN_HH
 
 
+#include <stdlib.h>  
+#include <errno.h> 
+
+/* Include string capability */
+#include <string>
+#include <string.h>
+#ifdef _WIN32
+#define strcasecmp _stricmp
+#define strncasecmp _strnicmp
+#define bzero(ptr, size) memset(ptr, 0, size)
+#else
+#include <strings.h> // POSIX
+#endif
 
 /* Compiler options, specified at runtime on the command line */
 

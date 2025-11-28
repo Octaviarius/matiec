@@ -49,10 +49,6 @@
 #include <sstream>
 #include <typeinfo>
 #include <list>
-#include <strings.h>
-// #include <string.h>  /* required for strlen() */
-// #include <stdlib.h>  /* required for atoi() */
-// #include <errno.h>   /* required for errno */
 
 #include "../util/symtable.hh"
 #include "../util/dsymtable.hh"

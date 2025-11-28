@@ -41,7 +41,7 @@
  */
 
 
-
+#include "../main.hh"
 #include "lvalue_check.hh"
 
 #define FIRST_(symbol1, symbol2) (((symbol1)->first_order < (symbol2)->first_order)   ? (symbol1) : (symbol2))
@@ -84,8 +84,6 @@ int lvalue_check_c::get_error_count() {
 	return error_count;
 }
 
-
-#include <strings.h>
 /* No writing to iterator variables (used in FOR loops) inside the loop itself */
 void lvalue_check_c::check_assignment_to_controlvar(symbol_c *lvalue) {
 	for (unsigned int i = 0; i < control_variables.size(); i++) {

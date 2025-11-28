@@ -50,12 +50,8 @@
 #include <list>
 #include <string>
 #include <string.h>
-#include <strings.h>
 
-
-
-
-
+#include "../main.hh"
 
 #define FIRST_(symbol1, symbol2) (((symbol1)->first_order < (symbol2)->first_order)   ? (symbol1) : (symbol2))
 #define  LAST_(symbol1, symbol2) (((symbol1)->last_order  > (symbol2)->last_order)    ? (symbol1) : (symbol2))

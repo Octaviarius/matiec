@@ -59,8 +59,8 @@
 #include <list>
 #include <string>
 #include <string.h>
-#include <strings.h>
 
+#include "../main.hh"
 
 /* set to 1 to see debug info during execution */
 static int debug = 0;

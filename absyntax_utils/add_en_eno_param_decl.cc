@@ -43,7 +43,6 @@
  */
 
 #include "add_en_eno_param_decl.hh"
-#include <strings.h>
 #include "../main.hh" // required for ERROR() and ERROR_MSG() macros.
 
 
