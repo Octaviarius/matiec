@@ -64,14 +64,10 @@
 #include "datatype_functions.hh"
 #include <typeinfo>
 #include <list>
-#include <string>
-#include <string.h>
-#include <strings.h>
 
-
-#define GET_CVALUE(dtype, symbol)             ((symbol)->const_value._##dtype.get())
-#define VALID_CVALUE(dtype, symbol)           ((symbol)->const_value._##dtype.is_valid())
-#define IS_OVERFLOW(dtype, symbol)            ((symbol)->const_value._##dtype.is_overflow())
+#define GET_CVALUE(dtype, symbol)             ((symbol)->const_value.dtype##_val.get())
+#define VALID_CVALUE(dtype, symbol)           ((symbol)->const_value.dtype##_val.is_valid())
+#define IS_OVERFLOW(dtype, symbol)            ((symbol)->const_value.dtype##_val.is_overflow())
 
 
 /* set to 1 to see debug info during execution */

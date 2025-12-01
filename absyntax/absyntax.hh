@@ -49,8 +49,6 @@
 #include <stdio.h> // required for NULL
 #include <vector>
 #include <map>
-#include <string>
-#include <stdint.h>  // required for uint64_t, etc...
 #include "../main.hh" // required for uint8_t, real_64_t, ..., and the macros INT8_MAX, REAL32_MAX, ... */
 
 
@@ -136,10 +134,10 @@ class const_value_c {
 
     };
 
-    const_value__< int64_t>  _int64; /* status is initialised to UNDEFINED */
-    const_value__<uint64_t> _uint64; /* status is initialised to UNDEFINED */
-    const_value__<real64_t> _real64; /* status is initialised to UNDEFINED */
-    const_value__<bool    >   _bool; /* status is initialised to UNDEFINED */
+    const_value__< int64_t> int64_val; /* status is initialised to UNDEFINED */
+    const_value__<uint64_t> uint64_val; /* status is initialised to UNDEFINED */
+    const_value__<real64_t> real64_val; /* status is initialised to UNDEFINED */
+    const_value__<bool    > bool_val; /* status is initialised to UNDEFINED */
     
     /* default constructor and destructor */
      const_value_c(void) {};
@@ -147,11 +145,11 @@ class const_value_c {
     
     /* comparison operator */
     bool operator==(const const_value_c cv)
-      {return ((_int64==cv._int64) && (_uint64==cv._uint64) && (_real64==cv._real64) && (_bool==cv._bool));}                                                     
+      {return ((int64_val==cv.int64_val) && (uint64_val==cv.uint64_val) && (real64_val==cv.real64_val) && (bool_val==cv.bool_val));}                                                     
       
     /* return true if at least one of the const values (int, real, ...) is a valid const value */
     bool is_const(void) 
-      {return (_int64.is_valid() || _uint64.is_valid() || _real64.is_valid() || _bool.is_valid());}   
+      {return (int64_val.is_valid() || uint64_val.is_valid() || real64_val.is_valid() || bool_val.is_valid());}   
 };
 
 // A forward declaration

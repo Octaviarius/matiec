@@ -41,7 +41,7 @@
 
 
 
-#include <unistd.h>
+// #include <unistd.h>
 #include <stdio.h>  /* required for NULL */
 #include "absyntax_utils.hh"
 #include "../absyntax/visitor.hh"
@@ -51,24 +51,24 @@
 
 static void dump_cvalue(const_value_c const_value) {
   fprintf(stderr, "constv{");
-  if      (const_value._real64.is_valid   ()) fprintf(stderr, "%f",        const_value._real64.get());
-  else if (const_value._real64.is_overflow()) fprintf(stderr, "ov");
-  else if (const_value._real64.is_nonconst()) fprintf(stderr, "nc");
+  if      (const_value.real64_val.is_valid   ()) fprintf(stderr, "%f",        const_value.real64_val.get());
+  else if (const_value.real64_val.is_overflow()) fprintf(stderr, "ov");
+  else if (const_value.real64_val.is_nonconst()) fprintf(stderr, "nc");
   else                                        fprintf(stderr, "?");
   fprintf(stderr, ", i=");
-  if      (const_value. _int64.is_valid   ()) fprintf(stderr, "%" PRId64 "", const_value. _int64.get());
-  else if (const_value. _int64.is_overflow()) fprintf(stderr, "ov");
-  else if (const_value. _int64.is_nonconst()) fprintf(stderr, "nc");
+  if      (const_value. int64_val.is_valid   ()) fprintf(stderr, "%" PRId64 "", const_value. int64_val.get());
+  else if (const_value. int64_val.is_overflow()) fprintf(stderr, "ov");
+  else if (const_value. int64_val.is_nonconst()) fprintf(stderr, "nc");
   else                                        fprintf(stderr, "?");
   fprintf(stderr, ", u=");
-  if      (const_value._uint64.is_valid   ()) fprintf(stderr, "%" PRIu64 "", const_value._uint64.get());
-  else if (const_value._uint64.is_overflow()) fprintf(stderr, "ov");
-  else if (const_value._uint64.is_nonconst()) fprintf(stderr, "nc");
+  if      (const_value.uint64_val.is_valid   ()) fprintf(stderr, "%" PRIu64 "", const_value.uint64_val.get());
+  else if (const_value.uint64_val.is_overflow()) fprintf(stderr, "ov");
+  else if (const_value.uint64_val.is_nonconst()) fprintf(stderr, "nc");
   else                                        fprintf(stderr, "?");
   fprintf(stderr, ", b=");
-  if      (const_value.  _bool.is_valid   ()) fprintf(stderr, "%d",        const_value.  _bool.get()?1:0);
-  else if (const_value.  _bool.is_overflow()) fprintf(stderr, "ov");
-  else if (const_value.  _bool.is_nonconst()) fprintf(stderr, "nc");
+  if      (const_value.  bool_val.is_valid   ()) fprintf(stderr, "%d",        const_value.  bool_val.get()?1:0);
+  else if (const_value.  bool_val.is_overflow()) fprintf(stderr, "ov");
+  else if (const_value.  bool_val.is_nonconst()) fprintf(stderr, "nc");
   else                                        fprintf(stderr, "?");
   fprintf(stderr, "}");
 }

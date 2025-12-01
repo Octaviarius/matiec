@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.5)
 
 project(matiec)
 
+add_compile_options(-g -Wall -Wpointer-arith -Wwrite-strings -Wno-unused)
+
+set(PACKAGE_NAME "")
+set(PACKAGE_VERSION "")
+
+
 # iec2c
 add_executable(iec2c 
     "main.cc"
@@ -16,6 +22,10 @@ target_link_libraries(iec2c PUBLIC
     absyntax
     libabsyntax_utils
     getopt
+)
+target_compile_definitions(iec2c PUBLIC
+    PACKAGE_NAME=\"${PACKAGE_NAME}\"
+    PACKAGE_VERSION=\"${PACKAGE_VERSION}\"
 )
 
 # iec2iec
@@ -33,6 +43,11 @@ target_link_libraries(iec2iec PUBLIC
     libabsyntax_utils
     getopt
 )
+target_compile_definitions(iec2iec PUBLIC
+    PACKAGE_NAME=\"${PACKAGE_NAME}\"
+    PACKAGE_VERSION=\"${PACKAGE_VERSION}\"
+)
+
 
 add_subdirectory("absyntax")
 add_subdirectory("absyntax_utils")

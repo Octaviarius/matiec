@@ -75,7 +75,7 @@
 #include <iostream>
 
 
-#include "config/config.h"
+// #include "config/config.h"
 #include "absyntax/absyntax.hh"
 #include "absyntax_utils/absyntax_utils.hh"
 #include "stage1_2/stage1_2.hh"

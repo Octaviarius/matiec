@@ -7,8 +7,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(FLEX REQUIRED)
 find_package(BISON REQUIRED)
 
-bison_target(stage1_2_bison iec_bison.yy iec_bison.cc DEFINES_FILE iec_bison.hh COMPILE_FLAGS -d)
-flex_target(stage1_2_flex iec_flex.ll iec_flex.cc COMPILE_FLAGS "--warn -o")
+bison_target(stage1_2_bison iec_bison.yy ${CMAKE_CURRENT_BINARY_DIR}/iec_bison.cc DEFINES_FILE ${CMAKE_CURRENT_BINARY_DIR}/iec_bison.hh  VERBOSE)
+flex_target(stage1_2_flex iec_flex.ll ${CMAKE_CURRENT_BINARY_DIR}/iec_flex.cc)
 
 add_library(${PROJECT_NAME} STATIC
     ${BISON_stage1_2_bison_OUTPUTS}

@@ -1,7 +1,7 @@
 project(absyntax_utils LANGUAGES C CXX)
 
 add_library(${PROJECT_NAME} STATIC
-   absyntax_utils.cc
+    absyntax_utils.cc
 	add_en_eno_param_decl.cc
 	decompose_var_instance_name.cc
 	array_dimension_iterator.cc
