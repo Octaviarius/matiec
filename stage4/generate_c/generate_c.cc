@@ -112,11 +112,21 @@
 
 /* Variable declaration symbol for accessor macros */
 #define DECLARE_VAR "__DECLARE_VAR"
+#define DECLARE_COMPLEX_VAR "__DECLARE_COMPLEX_VAR"
+#define DECLARE_ARRAY_VAR "__DECLARE_ARRAY_VAR"
+#define DECLARE_STRUCT_VAR "__DECLARE_STRUCT_VAR"
+#define DECLARE_FB "__DECLARE_FB"
+#define DECLARE_FB_TYPE "__DECLARE_FB_TYPE"
+#define DECLARE_PROGRAM_TYPE "__DECLARE_PROGRAM_TYPE"
 #define DECLARE_GLOBAL "__DECLARE_GLOBAL"
+#define DECLARE_GLOBAL_ARRAY "__DECLARE_GLOBAL_ARRAY"
+#define DECLARE_GLOBAL_STRUCT "__DECLARE_GLOBAL_STRUCT"
 #define DECLARE_GLOBAL_FB "__DECLARE_GLOBAL_FB"
 #define DECLARE_GLOBAL_LOCATION "__DECLARE_GLOBAL_LOCATION"
 #define DECLARE_GLOBAL_LOCATED "__DECLARE_GLOBAL_LOCATED"
 #define DECLARE_EXTERNAL "__DECLARE_EXTERNAL"
+#define DECLARE_EXTERNAL_ARRAY "__DECLARE_EXTERNAL_ARRAY"
+#define DECLARE_EXTERNAL_STRUCT "__DECLARE_EXTERNAL_STRUCT"
 #define DECLARE_EXTERNAL_FB "__DECLARE_EXTERNAL_FB"
 #define DECLARE_LOCATED "__DECLARE_LOCATED"
 #define DECLARE_GLOBAL_PROTOTYPE "__DECLARE_GLOBAL_PROTOTYPE"
@@ -241,7 +251,6 @@ int  stage4_parse_options(char *options) {return 0;}
 #include "generate_c_vardecl.cc"
 #include "generate_c_configbody.cc"
 #include "generate_location_list.cc"
-#include "generate_var_list.cc"
 
 /***********************************************************************/
 /***********************************************************************/
@@ -1060,14 +1069,13 @@ class generate_c_pous_c {
       /* (A) Function Block data structure declaration... */
       if (print_declaration) {
         /* (A.1) Data structure declaration */
-        s4o.print("// FUNCTION_BLOCK ");
+        s4o.print(DECLARE_FB_TYPE);
+        s4o.print("(");
         symbol->fblock_name->accept(print_base);
-        s4o.print("\n// Data part\n");
-        s4o.print("typedef struct {\n");
+        s4o.print(",\n");
         s4o.indent_right();
 
         /* (A.2) Public variables: i.e. the function parameters... */
-        s4o.print(s4o.indent_spaces + "// FB Interface - IN, OUT, IN_OUT variables\n");
         vardecl = new generate_c_vardecl_c(&s4o,
                                            generate_c_vardecl_c::local_vf,
                                            generate_c_vardecl_c::input_vt    |
@@ -1080,7 +1088,6 @@ class generate_c_pous_c {
         s4o.print("\n");
 
         /* (A.3) Private internal variables */
-        s4o.print(s4o.indent_spaces + "// FB private variables - TEMP, private and located variables\n");
         vardecl = new generate_c_vardecl_c(&s4o,
                                            generate_c_vardecl_c::local_vf,
                                            generate_c_vardecl_c::temp_vt    |
@@ -1098,14 +1105,12 @@ class generate_c_pous_c {
       
         /* (A.5) Function Block data structure type name. */
         s4o.indent_left();
-        s4o.print("} ");
-        symbol->fblock_name->accept(print_base);
-        s4o.print(FB_DATASTRUCTURE_SUFFIX);
-        s4o.print(";\n\n");
+        s4o.print(")\n\n");
+
       }
-      
+
       if (!print_declaration) {
-        /* (A.6) Function Block inline function declaration for function invocation */
+        /* (A.7) Function Block inline function declaration for function invocation */
         generate_c_inlinefcall_c *inlinedecl = new generate_c_inlinefcall_c(&s4o, symbol->fblock_name, symbol, FB_FUNCTION_PARAM"->");
         symbol->fblock_body->accept(*inlinedecl);
         delete inlinedecl;
@@ -1249,14 +1254,13 @@ class generate_c_pous_c {
       /* (A) Program data structure declaration... */
       if (print_declaration) {      
         /* (A.1) Data structure declaration */
-        s4o.print("// PROGRAM ");
+        s4o.print(DECLARE_PROGRAM_TYPE);
+        s4o.print("(");
         symbol->program_type_name->accept(print_base);
-        s4o.print("\n// Data part\n");
-        s4o.print("typedef struct {\n");
+        s4o.print(",\n");
         s4o.indent_right();
       
         /* (A.2) Public variables: i.e. the program parameters... */
-        s4o.print(s4o.indent_spaces + "// PROGRAM Interface - IN, OUT, IN_OUT variables\n");
         vardecl = new generate_c_vardecl_c(&s4o,
                                            generate_c_vardecl_c::local_vf,
                                            generate_c_vardecl_c::input_vt  |
@@ -1267,7 +1271,6 @@ class generate_c_pous_c {
         s4o.print("\n");
   
         /* (A.3) Private internal variables */
-        s4o.print(s4o.indent_spaces + "// PROGRAM private variables - TEMP, private and located variables\n");
         vardecl = new generate_c_vardecl_c(&s4o,
                       generate_c_vardecl_c::local_vf,
                       generate_c_vardecl_c::temp_vt    |
@@ -1285,12 +1288,10 @@ class generate_c_pous_c {
         
         /* (A.5) Program data structure type name. */
         s4o.indent_left();
-        s4o.print("} ");
-        symbol->program_type_name->accept(print_base);
-        s4o.print(FB_DATASTRUCTURE_SUFFIX);
-        s4o.print(";\n\n");
+        s4o.print(")\n\n");
+
       } else {
-        /* (A.6) Function Block inline function declaration for function invocation */
+        /* (A.7) Function Block inline function declaration for function invocation */
         generate_c_inlinefcall_c *inlinedecl = new generate_c_inlinefcall_c(&s4o, symbol->program_type_name, symbol, FB_FUNCTION_PARAM"->");
         symbol->function_block_body->accept(*inlinedecl);
         delete inlinedecl;
@@ -1463,10 +1464,11 @@ class generate_c_pous_c {
 class generate_c_config_c: public generate_c_base_and_typeid_c {
     private:
     stage4out_c &s4o_incl;
-    
+    stage4out_c &globals_s4o;
+
     public:
-    generate_c_config_c(stage4out_c *s4o_ptr, stage4out_c *s4o_incl_ptr)
-      : generate_c_base_and_typeid_c(s4o_ptr), s4o_incl(*s4o_incl_ptr) {
+    generate_c_config_c(stage4out_c *s4o_ptr, stage4out_c *s4o_incl_ptr, stage4out_c *globals_s4o_ptr)
+      : generate_c_base_and_typeid_c(s4o_ptr), s4o_incl(*s4o_incl_ptr), globals_s4o(*globals_s4o_ptr) {
     };
 
     virtual ~generate_c_config_c(void) {}
@@ -1548,6 +1550,15 @@ void *visit(configuration_declaration_c *symbol) {
   vardecl->print(symbol);
   delete vardecl;
   s4o.print("\n");
+
+  /* (A.2b) Global variables to GLOBALS.h */
+  vardecl = new generate_c_vardecl_c(&globals_s4o,
+                                     generate_c_vardecl_c::local_vf,
+                                     generate_c_vardecl_c::global_vt,
+                                     symbol->configuration_name);
+  vardecl->print(symbol);
+  delete vardecl;
+  globals_s4o.print("\n");
 
   s4o.print("#include \"POUS.c\"\n\n");
 
@@ -1696,10 +1707,12 @@ class generate_c_resources_c: public generate_c_base_and_typeid_c {
     symbol_c *current_task_name;
     symbol_c *current_global_vars;
     bool configuration_name;
+    stage4out_c &globals_s4o;
+    generate_c_base_and_typeid_c print_globals;
 
   public:
-    generate_c_resources_c(stage4out_c *s4o_ptr, symbol_c *config_scope, symbol_c *resource_scope, unsigned long long time)
-      : generate_c_base_and_typeid_c(s4o_ptr) {
+    generate_c_resources_c(stage4out_c *s4o_ptr, symbol_c *config_scope, symbol_c *resource_scope, unsigned long long time, stage4out_c *globals_s4o_ptr)
+      : generate_c_base_and_typeid_c(s4o_ptr), globals_s4o(*globals_s4o_ptr), print_globals(globals_s4o_ptr) {
       current_configuration = config_scope;
       search_config_instance   = new search_var_instance_decl_c(config_scope);
       search_resource_instance = new search_var_instance_decl_c(resource_scope);
@@ -1873,8 +1886,17 @@ END_RESOURCE
         vardecl->print(current_global_vars);
         delete vardecl;
         s4o.print("\n");
+
+        /* Resource globals to GLOBALS.h */
+        vardecl = new generate_c_vardecl_c(&globals_s4o,
+                                           generate_c_vardecl_c::local_vf,
+                                           generate_c_vardecl_c::global_vt,
+                                           current_resource_name);
+        vardecl->print(current_global_vars);
+        delete vardecl;
+        globals_s4o.print("\n");
       }
-      
+
       /* (A.3) POUs inclusion */
       s4o.print("#include \"POUS.c\"\n\n");
       
@@ -1967,6 +1989,14 @@ END_RESOURCE
           s4o.print("__");
           symbol->program_name->accept(*this);
           s4o.print("\n");
+          /* Program instance to GLOBALS.h */
+          globals_s4o.print("__DECLARE_PROGRAM_INSTANCE(");
+          symbol->program_type_name->accept(print_globals);
+          globals_s4o.print(",");
+          current_resource_name->accept(print_globals);
+          globals_s4o.print(",");
+          symbol->program_name->accept(print_globals);
+          globals_s4o.print(")\n");
           break;
         case init_dt:
           if (symbol->retain_option != NULL)
@@ -2549,8 +2579,8 @@ class generate_c_c: public iterator_visitor_c {
     stage4out_c                  pous_s4o;
     stage4out_c             pous_incl_s4o;
     stage4out_c     located_variables_s4o;
-    stage4out_c             variables_s4o;
-    
+    stage4out_c        globals_s4o;
+
     generate_c_typedecl_c          generate_c_typedecl;
     generate_c_implicit_typedecl_c generate_c_implicit_typedecl;
     generate_c_pous_c              generate_c_pous;
@@ -2577,7 +2607,7 @@ class generate_c_c: public iterator_visitor_c {
             pous_s4o(builddir, "POUS", "c"),
             pous_incl_s4o(builddir, "POUS", "h"),
             located_variables_s4o(builddir, "LOCATED_VARIABLES","h"),
-            variables_s4o(builddir, "VARIABLES","csv"),
+            globals_s4o(builddir, "GLOBALS", "h"),
             generate_c_typedecl         (&pous_incl_s4o),
             generate_c_implicit_typedecl(&pous_incl_s4o, &generate_c_typedecl)
     {
@@ -2595,22 +2625,22 @@ class generate_c_c: public iterator_visitor_c {
 /* 2.1.6 - Pragmas  */
 /********************/
     void *visit(enable_code_generation_pragma_c * symbol)  {
-      s4o                  .enable_output();  
-      pous_s4o             .enable_output();  
-      pous_incl_s4o        .enable_output();  
-      located_variables_s4o.enable_output();  
-      variables_s4o        .enable_output();  
-      allow_output = true;      
+      s4o                  .enable_output();
+      pous_s4o             .enable_output();
+      pous_incl_s4o        .enable_output();
+      located_variables_s4o.enable_output();
+      globals_s4o          .enable_output();
+      allow_output = true;
       return NULL;
     }
-    
+
     void *visit(disable_code_generation_pragma_c * symbol)  {
-      s4o                  .disable_output();  
-      pous_s4o             .disable_output();  
-      pous_incl_s4o        .disable_output();  
-      located_variables_s4o.disable_output();  
-      variables_s4o        .disable_output();  
-      allow_output = false;      
+      s4o                  .disable_output();
+      pous_s4o             .disable_output();
+      pous_incl_s4o        .disable_output();
+      located_variables_s4o.disable_output();
+      globals_s4o          .disable_output();
+      allow_output = false;
       return NULL;
     } 
 
@@ -2619,17 +2649,17 @@ class generate_c_c: public iterator_visitor_c {
 /* B 0 - Programming Model */
 /***************************/
     void *visit(library_c *symbol) {
-      pous_incl_s4o.print("#ifndef __POUS_H\n#define __POUS_H\n\n");
-      
       if (runtime_options.disable_implicit_en_eno) {
-        // If we are not generating the EN and ENO parameters for functions and FB,
-        //   then make sure we use the standard library version compiled without these parameters too!
         pous_incl_s4o.print("#ifndef DISABLE_EN_ENO_PARAMETERS\n");
         pous_incl_s4o.print("#define DISABLE_EN_ENO_PARAMETERS\n");
         pous_incl_s4o.print("#endif\n");
       }
-      
-      pous_incl_s4o.print("#include \"accessor.h\"\n#include \"iec_std_lib.h\"\n\n");
+
+      pous_incl_s4o.print("#ifdef  DISABLE_EN_ENO_PARAMETERS\n");
+      pous_incl_s4o.print("  #include \"iec_std_FB_no_ENENO.h\"\n");
+      pous_incl_s4o.print("#else\n");
+      pous_incl_s4o.print("  #include \"iec_std_FB.h\"\n");
+      pous_incl_s4o.print("#endif\n\n");
 
       /* First pass: type definitions + POU struct declarations to POUS.h */
       pou_generation_pass = pou_pass_headers_and_types;
@@ -2637,7 +2667,13 @@ class generate_c_c: public iterator_visitor_c {
         symbol->get_element(i)->accept(*this);
       }
 
-      pous_incl_s4o.print("#endif //__POUS_H\n");
+
+      /* Include standard FB implementations at the beginning of POUS.c */
+      pous_s4o.print("#ifdef  DISABLE_EN_ENO_PARAMETERS\n");
+      pous_s4o.print("  #include \"iec_std_FB_no_ENENO_impl.h\"\n");
+      pous_s4o.print("#else\n");
+      pous_s4o.print("  #include \"iec_std_FB_impl.h\"\n");
+      pous_s4o.print("#endif\n\n");
 
       /* Second pass: collect all POU forward declarations at the beginning of POUS.c */
       pou_generation_pass = pou_pass_fwd_decls;
@@ -2652,13 +2688,6 @@ class generate_c_c: public iterator_visitor_c {
         symbol->get_element(i)->accept(*this);
       }
       
-      generate_var_list_c generate_var_list(&variables_s4o, symbol);
-      generate_var_list.generate_programs(symbol);
-      generate_var_list.generate_variables(symbol);
-      variables_s4o.print("\n// Ticktime\n");
-      variables_s4o.print_long_long_integer(common_ticktime, false);
-      variables_s4o.print("\n");
-
       generate_location_list_c generate_location_list(&located_variables_s4o);
       symbol->accept(generate_location_list);
       return NULL;
@@ -2763,9 +2792,13 @@ class generate_c_c: public iterator_visitor_c {
 /* B 1.7 Configuration elements */
 /********************************/
     void *visit(configuration_declaration_c *symbol) {
+      if (pou_generation_pass == pou_pass_headers_and_types) {
+        if (symbol->global_var_declarations != NULL)
+          symbol->global_var_declarations->accept(generate_c_implicit_typedecl);
+        symbol->resource_declarations->accept(*this);
+        return NULL;
+      }
       if (pou_generation_pass != pou_pass_definitions) return NULL;
-      if (symbol->global_var_declarations != NULL)
-        symbol->global_var_declarations->accept(generate_c_implicit_typedecl);
       static int configuration_count = 0;
 
       if (configuration_count++) {
@@ -2789,7 +2822,7 @@ class generate_c_c: public iterator_visitor_c {
         
         stage4out_c config_s4o(current_builddir, current_name, "c");
         stage4out_c config_incl_s4o(current_builddir, current_name, "h");
-        generate_c_config_c generate_c_config(&config_s4o, &config_incl_s4o);
+        generate_c_config_c generate_c_config(&config_s4o, &config_incl_s4o, &globals_s4o);
         symbol->accept(generate_c_config);
 
         config_s4o.print("unsigned long long common_ticktime__ = ");
@@ -2797,6 +2830,7 @@ class generate_c_c: public iterator_visitor_c {
         config_s4o.print(" * ");
         config_s4o.print_long_long_integer(1000000 / MILLISECOND);
         config_s4o.print("; /*ns*/\n");
+
         config_s4o.print("unsigned long greatest_tick_count__ = (unsigned long)");
         config_s4o.print_long_integer(calculate_common_ticktime.get_greatest_tick_count());
         config_s4o.print("; /*tick*/\n");
@@ -2809,16 +2843,23 @@ class generate_c_c: public iterator_visitor_c {
 
       symbol->resource_declarations->accept(*this);
 
+      globals_s4o.print("__DECLARE_TICKTIME(");
+      globals_s4o.print_long_long_integer(common_ticktime * (1000000 / MILLISECOND), false);
+      globals_s4o.print(")\n");
+
       current_configuration = NULL;
       return NULL;
     }
 
     void *visit(resource_declaration_c *symbol) {
-      if (symbol->global_var_declarations != NULL)
-        symbol->global_var_declarations->accept(generate_c_implicit_typedecl);
+      if (pou_generation_pass == pou_pass_headers_and_types) {
+        if (symbol->global_var_declarations != NULL)
+          symbol->global_var_declarations->accept(generate_c_implicit_typedecl);
+        return NULL;
+      }
       symbol->resource_name->accept(*this);
       stage4out_c resources_s4o(current_builddir, current_name, "c");
-      generate_c_resources_c generate_c_resources(&resources_s4o, current_configuration, symbol, common_ticktime);
+      generate_c_resources_c generate_c_resources(&resources_s4o, current_configuration, symbol, common_ticktime, &globals_s4o);
       symbol->accept(generate_c_resources);
       if (generate_plc_state_backup_fuctions__ > 0) {
         generate_c_backup_resource_c generate_backup = generate_c_backup_resource_c(&resources_s4o);
@@ -2829,7 +2870,7 @@ class generate_c_c: public iterator_visitor_c {
 
     void *visit(single_resource_declaration_c *symbol) {
       stage4out_c resources_s4o(current_builddir, "RESOURCE", "c");
-      generate_c_resources_c generate_c_resources(&resources_s4o, current_configuration, symbol, common_ticktime);
+      generate_c_resources_c generate_c_resources(&resources_s4o, current_configuration, symbol, common_ticktime, &globals_s4o);
       symbol->accept(generate_c_resources);
       return NULL;
     }

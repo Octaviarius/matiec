@@ -1,0 +1,27 @@
+/*
+ * 
+ * Use the C pre-processor to generate POUS.py
+ *
+ * cpp -P -I lib/C lib/C/python_desc_template.pycpp -o POUS.py 
+ *
+ */
+
+#include "iec_types_list.h"
+#include "pous_flatcount_py.h"
+#include "POUS.h"
+
+POUS=[
+#include "undef_macros.h"
+#include "pous_decl_py.h"
+#include "POUS.h"
+]
+
+Instances=[
+#include "undef_macros.h"
+#include "globals_instances_py.h"
+#include "GLOBALS.h"
+]
+
+#include "undef_macros.h"
+#include "globals_ticktime_py.h"
+#include "GLOBALS.h"

@@ -37,8 +37,7 @@ cpp <<"END" | sed "s/ FUNCTION/\nFUNCTION/g" | grep -v '#'
 #define __DEFINE_CLASHING_FUNCTIONS 
 
 /* Macro that expand to subtypes */
-#define __ANY(DO)                 __ANY_DERIVED(DO) __ANY_ELEMENTARY(DO)
-#define __ANY_DERIVED(DO)
+#define __ANY(DO)                 __ANY_ELEMENTARY(DO)
 #define __ANY_ELEMENTARY(DO)      __ANY_MAGNITUDE(DO) __ANY_BIT(DO) __ANY_STRING(DO) __ANY_DATE(DO)
 #define __ANY_MAGNITUDE(DO)       __ANY_NUM(DO) DO(TIME)
 #define __ANY_BIT(DO)             __ANY_NBIT(DO) DO(BOOL)
@@ -51,8 +50,7 @@ cpp <<"END" | sed "s/ FUNCTION/\nFUNCTION/g" | grep -v '#'
 #define __ANY_SINT(DO)            DO(SINT) DO(INT) DO(DINT) DO(LINT)
 #define __ANY_UINT(DO)            DO(USINT) DO(UINT) DO(UDINT) DO(ULINT)
 
-#define __ANY_1(DO,P1)            __ANY_DERIVED_1(DO,P1) __ANY_ELEMENTARY_1(DO,P1)
-#define __ANY_DERIVED_1(DO,P1)
+#define __ANY_1(DO,P1)            __ANY_ELEMENTARY_1(DO,P1)
 #define __ANY_ELEMENTARY_1(DO,P1) __ANY_MAGNITUDE_1(DO,P1) __ANY_BIT_1(DO,P1) __ANY_STRING_1(DO,P1) __ANY_DATE_1(DO,P1)
 #define __ANY_MAGNITUDE_1(DO,P1)  __ANY_NUM_1(DO,P1) DO(TIME,P1)
 #define __ANY_BIT_1(DO,P1)        __ANY_NBIT_1(DO,P1) DO(BOOL,P1)

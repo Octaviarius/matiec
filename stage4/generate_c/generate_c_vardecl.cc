@@ -1039,17 +1039,17 @@ class generate_c_vardecl_c: protected generate_c_base_and_typeid_c {
         for(int i = 0; i < list->n; i++) {
           s4o.print(s4o.indent_spaces);
           if (wanted_varformat == local_vf) {
-            if (!is_fb) {
-              s4o.print(DECLARE_VAR);
-              s4o.print("(");
-            }
-            this->current_var_type_symbol->accept(*this);
-            if (is_fb){
-              s4o.print(FB_DATASTRUCTURE_SUFFIX);
-              s4o.print(" ");
+            if (is_fb) {
+              s4o.print(DECLARE_FB);
             } else {
-              s4o.print(",");
+              symbol_c *var_basetype = search_base_type_c::get_basetype_decl(this->current_var_type_symbol);
+              bool is_array = (var_basetype != NULL) && get_datatype_info_c::is_array(var_basetype);
+              bool is_struct = (var_basetype != NULL) && get_datatype_info_c::is_structure(var_basetype);
+              s4o.print(is_array ? DECLARE_ARRAY_VAR : is_struct ? DECLARE_STRUCT_VAR : DECLARE_VAR);
             }
+            s4o.print("(");
+            this->current_var_type_symbol->accept(*this);
+            s4o.print(",");
             print_variable_prefix();
           }
           else if (wanted_varformat == localinit_vf) {
@@ -1110,8 +1110,6 @@ class generate_c_vardecl_c: protected generate_c_base_and_typeid_c {
               s4o.print(";\n");
             }
           }
-          else if (is_fb)
-            s4o.print(";\n");
           else
             s4o.print(")\n");
         }
@@ -2008,16 +2006,25 @@ void *visit(external_declaration_c *symbol) {
   switch (wanted_varformat) {
     case local_vf:
     case localinit_vf:
-      s4o.print(s4o.indent_spaces);
-      if (is_fb)
-        s4o.print(DECLARE_EXTERNAL_FB);
-      else
-        s4o.print(DECLARE_EXTERNAL);
-      s4o.print("(");
-      this->current_var_type_symbol->accept(*this);
-      s4o.print(",");
-      symbol->global_var_name->accept(*this);
-      s4o.print(")\n");
+      {
+        symbol_c *var_basetype = search_base_type_c::get_basetype_decl(this->current_var_type_symbol);
+        bool is_array  = (var_basetype != NULL) && get_datatype_info_c::is_array(var_basetype);
+        bool is_struct = (var_basetype != NULL) && get_datatype_info_c::is_structure(var_basetype);
+        s4o.print(s4o.indent_spaces);
+        if (is_fb)
+          s4o.print(DECLARE_EXTERNAL_FB);
+        else if (is_array)
+          s4o.print(DECLARE_EXTERNAL_ARRAY);
+        else if (is_struct)
+          s4o.print(DECLARE_EXTERNAL_STRUCT);
+        else
+          s4o.print(DECLARE_EXTERNAL);
+        s4o.print("(");
+        this->current_var_type_symbol->accept(*this);
+        s4o.print(",");
+        symbol->global_var_name->accept(*this);
+        s4o.print(")\n");
+      }
       break;
 
     case constructorinit_vf:
@@ -2235,20 +2242,29 @@ void *visit(global_var_list_c *symbol) {
   switch (wanted_varformat) {
     case local_vf:
     case localinit_vf:
-      for(int i = 0; i < list->n; i++) {
-        s4o.print(s4o.indent_spaces);
-        if (is_fb)
-          s4o.print(DECLARE_GLOBAL_FB);
-        else
-          s4o.print(DECLARE_GLOBAL);
-        s4o.print("(");
-        this->current_var_type_symbol->accept(*this);
-        s4o.print(",");
-        if(this->resource_name != NULL)
-            this->resource_name->accept(*this);
-        s4o.print(",");
-        list->get_element(i)->accept(*this);
-        s4o.print(")\n");
+      {
+        symbol_c *var_basetype = search_base_type_c::get_basetype_decl(this->current_var_type_symbol);
+        bool is_array  = (var_basetype != NULL) && get_datatype_info_c::is_array(var_basetype);
+        bool is_struct = (var_basetype != NULL) && get_datatype_info_c::is_structure(var_basetype);
+        for(int i = 0; i < list->n; i++) {
+          s4o.print(s4o.indent_spaces);
+          if (is_fb)
+            s4o.print(DECLARE_GLOBAL_FB);
+          else if (is_array)
+            s4o.print(DECLARE_GLOBAL_ARRAY);
+          else if (is_struct)
+            s4o.print(DECLARE_GLOBAL_STRUCT);
+          else
+            s4o.print(DECLARE_GLOBAL);
+          s4o.print("(");
+          this->current_var_type_symbol->accept(*this);
+          s4o.print(",");
+          if(this->resource_name != NULL)
+              this->resource_name->accept(*this);
+          s4o.print(",");
+          list->get_element(i)->accept(*this);
+          s4o.print(")\n");
+        }
       }
       break;
 

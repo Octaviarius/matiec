@@ -3,9 +3,73 @@
 
 #define __INITIAL_VALUE(...) __VA_ARGS__
 
+// Types declaration macros
+
+#define __DECLARE_DERIVED_TYPE(type, base)\
+typedef base type;\
+typedef __IEC_##base##_t __IEC_##type##_t;\
+typedef __IEC_##base##_p __IEC_##type##_p;
+
+#define __DECLARE_COMPLEX_STRUCT(type)\
+typedef struct {\
+  IEC_BYTE flags;\
+  type value;\
+} __IEC_##type##_t;\
+\
+typedef struct {\
+  IEC_BYTE flags;\
+  type *value;\
+} __IEC_##type##_p;
+
+#define __DECLARE_ENUMERATED_TYPE(type, ...)\
+typedef enum {\
+  __VA_ARGS__\
+} type;\
+__DECLARE_COMPLEX_STRUCT(type)
+
+#define __DIM(...) [__VA_ARGS__]
+
+#define __DECLARE_ARRAY_TYPE(type, base, dims)\
+typedef struct {\
+  __IEC_##base##_t table dims;\
+} type;\
+__DECLARE_COMPLEX_STRUCT(type)
+
+#define __DECLARE_ARRAY_OF_COMPLEX_TYPE(type, base, dims)\
+typedef struct {\
+  base table dims;\
+} type;\
+__DECLARE_COMPLEX_STRUCT(type)
+
+#define __DECLARE_STRUCT_TYPE(type, elements)\
+typedef struct {\
+  elements\
+} type;\
+__DECLARE_COMPLEX_STRUCT(type)
+
+#define __DECLARE_REFTO_TYPE(type, name)\
+typedef name type;\
+__DECLARE_COMPLEX_STRUCT(type)
+
 // variable declaration macros
 #define __DECLARE_VAR(type, name)\
 	__IEC_##type##_t name;
+#define __DECLARE_COMPLEX_VAR(type, name)\
+	type name;
+#define __DECLARE_ARRAY_VAR(type, name)\
+	__IEC_##type##_t name;
+#define __DECLARE_STRUCT_VAR(type, name)\
+	__IEC_##type##_t name;
+#define __DECLARE_FB(type, name)\
+	type##_data__ name;
+#define __DECLARE_FB_TYPE(name, members)\
+	typedef struct {\
+	  members\
+	} name##_data__;
+#define __DECLARE_PROGRAM_TYPE(name, members)\
+	typedef struct {\
+	  members\
+	} name##_data__;
 #define __DECLARE_GLOBAL(type, domain, name)\
 	__IEC_##type##_t domain##__##name;\
 	static __IEC_##type##_t* GLOBAL__##name = &(domain##__##name);\
@@ -18,6 +82,10 @@
 	GLOBAL_CAST type* __GET_GLOBAL_##name(void) {\
 		return &((*GLOBAL__##name).value);\
 	}
+#define __DECLARE_GLOBAL_ARRAY(type, domain, name)\
+	__DECLARE_GLOBAL(type, domain, name)
+#define __DECLARE_GLOBAL_STRUCT(type, domain, name)\
+	__DECLARE_GLOBAL(type, domain, name)
 #define __DECLARE_GLOBAL_FB(type, domain, name)\
 	type##_data__ domain##__##name;\
 	static type##_data__* GLOBAL__##name = &(domain##__##name);\
@@ -44,10 +112,17 @@
     extern type##_data__* __GET_GLOBAL_##name(void);
 #define __DECLARE_EXTERNAL(type, name)\
 	__IEC_##type##_p name;
+#define __DECLARE_EXTERNAL_ARRAY(type, name)\
+	__IEC_##type##_p name;
+#define __DECLARE_EXTERNAL_STRUCT(type, name)\
+	__IEC_##type##_p name;
 #define __DECLARE_EXTERNAL_FB(type, name)\
 	type##_data__* name;
 #define __DECLARE_LOCATED(type, name)\
 	__IEC_##type##_p name;
+#define __DECLARE_PROGRAM_INSTANCE(type, resource, name)\
+	type##_data__ resource##__##name;
+#define __DECLARE_TICKTIME(value)
 
 
 // variable initialization macros

@@ -369,16 +369,21 @@ void *visit(structured_variable_c *symbol) {
         if      (search_var_instance_decl_c::external_vt == search_var_instance_decl.get_vartype(get_var_name_c::get_last_field(symbol->record_variable)))
           s4o.print("->");
         else if (dynamic_cast<deref_operator_c *>(symbol->record_variable) != NULL)
-          s4o.print("->"); /* please read the comment in visit(deref_operator_c *) tio understand what this line is doing! */
-        else  
+          s4o.print("->");
+        else
           s4o.print(".");
         symbol->field_selector->accept(*this);
       }
       break;
     case complextype_base_fullpath_vg:
       symbol->record_variable->accept(*this);
-      if (   get_datatype_info_c::is_function_block(symbol->record_variable->datatype)
-          || get_datatype_info_c::is_sfc_step      (symbol->record_variable->datatype)) {
+      if (get_datatype_info_c::is_sfc_step(symbol->record_variable->datatype)) {
+        /* SFC step properties are flat variables: StepName_X, StepName_T */
+        s4o.print("_");
+        symbol->field_selector->accept(*this);
+        base_needs_value = true;
+      }
+      else if (get_datatype_info_c::is_function_block(symbol->record_variable->datatype)) {
         if (NULL == symbol->record_variable->scope) ERROR;
         search_var_instance_decl_c search_var_instance_decl(symbol->record_variable->scope);
         if      (search_var_instance_decl_c::external_vt == search_var_instance_decl.get_vartype(get_var_name_c::get_last_field(symbol->record_variable)))

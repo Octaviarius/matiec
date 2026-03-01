@@ -845,18 +845,6 @@ static inline LWORD __uint_to_bcd(ULINT IN){
 static inline TYPENAME __move_##TYPENAME(TYPENAME op1) {return op1;}
 __ANY(__move_)
 
-
-
-
-
-
-
 #include "iec_std_functions.h"
-
-#ifdef  DISABLE_EN_ENO_PARAMETERS
-  #include "iec_std_FB_no_ENENO.h"
-#else
-  #include "iec_std_FB.h"
-#endif
 
 #endif /* _IEC_STD_LIB_H */

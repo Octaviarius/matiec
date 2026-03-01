@@ -198,12 +198,6 @@ class generate_datatypes_aliasid_c: fcall_visitor_c {
 
 generate_datatypes_aliasid_c *generate_datatypes_aliasid_c::singleton_ = NULL;
 
-
-
-
-
-
-
 /***************************************************************************************/
 /***************************************************************************************/
 /***************************************************************************************/
@@ -257,9 +251,10 @@ class generate_c_typedecl_c: public generate_c_base_and_typeid_c {
      */
     generate_c_base_and_typeid_c *generate_c_typeid;
 
-    
+
   public:
-    generate_c_typedecl_c(stage4out_c *s4o_ptr): generate_c_base_and_typeid_c(s4o_ptr), s4o_incl(*s4o_ptr) /*, generate_c_print_typename(s4o_ptr) */{
+    generate_c_typedecl_c(stage4out_c *s4o_ptr):
+        generate_c_base_and_typeid_c(s4o_ptr), s4o_incl(*s4o_ptr) {
       current_typedefinition = none_td;
       current_basetypedeclaration = none_bd;
       current_type_name = NULL;
@@ -308,6 +303,9 @@ class generate_c_typedecl_c: public generate_c_base_and_typeid_c {
 
       return NULL;
     }
+
+
+    /* Print the __IEC_types_enum value for a simple (leaf) type */
 
 
 /***************************/
@@ -457,9 +455,9 @@ void *visit(subrange_c *symbol) {
   switch (current_typedefinition) {
     case array_td:
       if (current_basetypedeclaration == arraysubrange_bd) {
-        s4o_incl.print("[");
+        s4o_incl.print("__DIM(");
         s4o_incl.print(symbol->dimension);
-        s4o_incl.print("]");
+        s4o_incl.print(")");
       }
       else
         symbol->lower_limit->accept(*this);  // always calls neg_integer_c or integer_c
@@ -558,9 +556,6 @@ void *visit(array_type_declaration_c *symbol) {
   current_typedefinition = array_td;
   current_type_name = id;
 
-  s4o_incl.print("__DECLARE_ARRAY_TYPE(");
-  current_type_name->accept(*generate_c_typeid);
-  s4o_incl.print(",");
   symbol->array_spec_init->accept(*this); // always calls array_spec_init_c
   s4o_incl.print(")\n");
 
@@ -588,21 +583,14 @@ void *visit(array_spec_init_c *symbol) {
 /* ARRAY '[' array_subrange_list ']' OF non_generic_type_name */
 void *visit(array_specification_c *symbol) {
   TRACE("array_specification_c");
-  // The 2nd and 3rd argument of a call to the __DECLARE_ARRAY_TYPE macro!
-  // For simple element types, use __IEC_type_t wrapper so each element has its own flags
-  {
-    symbol_c *elem_basetype = search_base_type_c::get_basetype_decl(symbol->non_generic_type_name);
-    bool elem_is_simple = (elem_basetype != NULL)
-        && !get_datatype_info_c::is_array(elem_basetype)
-        && !get_datatype_info_c::is_structure(elem_basetype);
-    if (elem_is_simple) {
-      s4o_incl.print("__IEC_");
-      symbol->non_generic_type_name->accept(*generate_c_typeid);
-      s4o_incl.print("_t");
-    } else {
-      symbol->non_generic_type_name->accept(*generate_c_typeid);
-    }
-  }
+  symbol_c *elem_basetype = search_base_type_c::get_basetype_decl(symbol->non_generic_type_name);
+  bool elem_is_complex = (elem_basetype != NULL)
+      && (get_datatype_info_c::is_array(elem_basetype)
+       || get_datatype_info_c::is_structure(elem_basetype));
+  s4o_incl.print(elem_is_complex ? "__DECLARE_ARRAY_OF_COMPLEX_TYPE(" : "__DECLARE_ARRAY_TYPE(");
+  current_type_name->accept(*generate_c_typeid);
+  s4o_incl.print(",");
+  symbol->non_generic_type_name->accept(*generate_c_typeid);
   s4o_incl.print(",");
   current_basetypedeclaration = arraysubrange_bd;
   symbol->array_subrange_list->accept(*this); // always calls array_subrange_list_c, which the iterator_visitor_c base class will call subrange_c
@@ -756,20 +744,17 @@ void *visit(structure_element_declaration_c *symbol) {
 
   symbol_c *elem_type = spec_init_sperator_c::get_spec(symbol->spec_init);
   symbol_c *elem_basetype = search_base_type_c::get_basetype_decl(elem_type);
-  bool elem_is_simple = (elem_basetype != NULL)
-      && !get_datatype_info_c::is_array(elem_basetype)
-      && !get_datatype_info_c::is_structure(elem_basetype);
-  if (elem_is_simple) {
-    s4o_incl.print("__IEC_");
-    elem_type->accept(*generate_c_typeid);
-    s4o_incl.print("_t");
-  } else {
-    symbol->spec_init->accept(*generate_c_typeid);
-  }
-  s4o_incl.print(" ");
-  symbol->structure_element_name->accept(*generate_c_typeid);
-  s4o_incl.print(";\n");
+  bool elem_is_complex = (elem_basetype != NULL)
+      && (get_datatype_info_c::is_array(elem_basetype)
+       || get_datatype_info_c::is_structure(elem_basetype));
+
   s4o_incl.print(s4o_incl.indent_spaces);
+  s4o_incl.print(elem_is_complex ? DECLARE_COMPLEX_VAR : DECLARE_VAR);
+  s4o_incl.print("(");
+  elem_type->accept(*generate_c_typeid);
+  s4o_incl.print(",");
+  symbol->structure_element_name->accept(*generate_c_typeid);
+  s4o_incl.print(")\n");
 
   return NULL;
 }

@@ -21,39 +21,8 @@
 #ifndef IEC_TYPES_ALL_H
 #define IEC_TYPES_ALL_H
 
-
-/* Macro that expand to subtypes */
-#define __ANY(DO)                 __ANY_DERIVED(DO) __ANY_ELEMENTARY(DO)
-#define __ANY_DERIVED(DO)
-#define __ANY_ELEMENTARY(DO)      __ANY_MAGNITUDE(DO) __ANY_BIT(DO) __ANY_STRING(DO) __ANY_DATE(DO)
-#define __ANY_MAGNITUDE(DO)       __ANY_NUM(DO) DO(TIME)
-#define __ANY_BIT(DO)             __ANY_NBIT(DO) DO(BOOL)
-#define __ANY_NBIT(DO)            DO(BYTE) DO(WORD) DO(DWORD) DO(LWORD)
-#define __ANY_STRING(DO)          DO(STRING)
-#define __ANY_DATE(DO)            DO(DATE) DO(TOD) DO(DT)
-#define __ANY_NUM(DO)             __ANY_REAL(DO) __ANY_INT(DO)
-#define __ANY_REAL(DO)            DO(REAL) DO(LREAL)
-#define __ANY_INT(DO)             __ANY_SINT(DO) __ANY_UINT(DO)
-#define __ANY_SINT(DO)            DO(SINT) DO(INT) DO(DINT) DO(LINT)
-#define __ANY_UINT(DO)            DO(USINT) DO(UINT) DO(UDINT) DO(ULINT)
-
-
-/* Macro that expand to subtypes */
-#define __ANY_1(DO,P1)            __ANY_DERIVED_1(DO,P1) __ANY_ELEMENTARY_1(DO,P1)
-#define __ANY_DERIVED_1(DO,P1)
-#define __ANY_ELEMENTARY_1(DO,P1) __ANY_MAGNITUDE_1(DO,P1) __ANY_BIT_1(DO,P1) __ANY_STRING_1(DO,P1) __ANY_DATE_1(DO,P1)
-#define __ANY_MAGNITUDE_1(DO,P1)  __ANY_NUM_1(DO,P1) DO(TIME,P1)
-#define __ANY_BIT_1(DO,P1)        __ANY_NBIT_1(DO,P1) DO(BOOL,P1)
-#define __ANY_NBIT_1(DO,P1)       DO(BYTE,P1) DO(WORD,P1) DO(DWORD,P1) DO(LWORD,P1)
-#define __ANY_STRING_1(DO,P1)     DO(STRING,P1)
-#define __ANY_DATE_1(DO,P1)       DO(DATE,P1) DO(TOD,P1) DO(DT,P1)
-#define __ANY_NUM_1(DO,P1)        __ANY_REAL_1(DO,P1) __ANY_INT_1(DO,P1)
-#define __ANY_REAL_1(DO,P1)       DO(REAL,P1) DO(LREAL,P1)
-#define __ANY_INT_1(DO,P1)        __ANY_SINT_1(DO,P1) __ANY_UINT_1(DO,P1)
-#define __ANY_SINT_1(DO,P1)       DO(SINT,P1) DO(INT,P1) DO(DINT,P1) DO(LINT,P1)
-#define __ANY_UINT_1(DO,P1)       DO(USINT,P1) DO(UINT,P1) DO(UDINT,P1) DO(ULINT,P1)
-
-
+#include <stddef.h>
+#include "iec_types_list.h"
 
 /*********************/
 /*  IEC Types defs   */
@@ -67,10 +36,8 @@
   #define FALSE 0
 #endif
 
-#define __IEC_DEBUG_FLAG 0x01
 #define __IEC_FORCE_FLAG 0x02
 #define __IEC_RETAIN_FLAG 0x04
-#define __IEC_OUTPUT_FLAG 0x08
 
 #define __DECLARE_IEC_TYPE(type)\
 typedef IEC_##type type;\
@@ -85,61 +52,32 @@ typedef struct {\
   IEC_##type *value;\
 } __IEC_##type##_p;
 
-
-
-#define __DECLARE_DERIVED_TYPE(type, base)\
-typedef base type;\
-typedef __IEC_##base##_t __IEC_##type##_t;\
-typedef __IEC_##base##_p __IEC_##type##_p;
-
-#define __DECLARE_COMPLEX_STRUCT(type)\
-typedef struct {\
-  type value;\
-  IEC_BYTE flags;\
-} __IEC_##type##_t;\
-\
-typedef struct {\
-  type *value;\
-  IEC_BYTE flags;\
-} __IEC_##type##_p;
-
-#define __DECLARE_ENUMERATED_TYPE(type, ...)\
-typedef enum {\
-  __VA_ARGS__\
-} type;\
-__DECLARE_COMPLEX_STRUCT(type)
-
-#define __DECLARE_ARRAY_TYPE(type, base, size)\
-typedef struct {\
-  base table size;\
-} type;\
-__DECLARE_COMPLEX_STRUCT(type)
-
-#define __DECLARE_STRUCT_TYPE(type, elements)\
-typedef struct {\
-  elements\
-} type;\
-__DECLARE_COMPLEX_STRUCT(type)
-
-#define __DECLARE_REFTO_TYPE(type, name)\
-typedef name type;\
-__DECLARE_COMPLEX_STRUCT(type)
-
-
 /* Those typdefs clash with windows.h */
 /* i.e. this file cannot be included aside windows.h */
 __ANY(__DECLARE_IEC_TYPE)
+
+/* Ersatz for ENUMs to map them to int in variable access */
+typedef int IEC_ENUM;
+__DECLARE_IEC_TYPE(ENUM)
 
 /* Enumerate native types */
 #define __decl_enum_type(TYPENAME) TYPENAME##_ENUM,
 #define __decl_enum_pointer(TYPENAME) TYPENAME##_P_ENUM,
 #define __decl_enum_output(TYPENAME) TYPENAME##_O_ENUM,
 typedef enum{
+  SIMPLE_ENUM = 0,
   __ANY(__decl_enum_type)
+  POINTED_ENUM = 32,
   __ANY(__decl_enum_pointer)
+  OUTPUT_ENUM = 64,
   __ANY(__decl_enum_output)
-  /* SFC specific types are never external or global */
-  UNKNOWN_ENUM
+  FB_ENUM = 96,
+  STRUCT_ENUM = 128,
+  ARRAY_ENUM = 160,
+  ENUM_ENUM = 192,
+  ENUM_O_ENUM = 193,
+  ENUM_P_ENUM = 194,
+  UNKNOWN_ENUM = 255
 } __IEC_types_enum;
 
 /* Get size of type from its number */
@@ -158,5 +96,17 @@ static inline USINT __get_type_enum_size(__IEC_types_enum t){
  }
  return 0;
 }
+
+/* Callback for __recurse visitor functions.
+ * Returns: 0=stop, 1=continue/recurse, -1=step over, -2=step out, N>1=jump N */
+typedef int (*__recurse_cb_t)(
+    __IEC_types_enum type,
+    void *ptr,
+    unsigned int cumulated_index,
+    unsigned int local_index,
+    unsigned int member_flat_count,
+    const char *name,
+    void *userdata
+);
 
 #endif /*IEC_TYPES_ALL_H*/
