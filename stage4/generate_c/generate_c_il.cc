@@ -135,6 +135,8 @@ class generate_c_il_c: public generate_c_base_and_typeid_c, il_default_variable_
       complextype_base_vg,
       complextype_base_assignment_vg,
       complextype_suffix_vg,
+      complextype_base_fullpath_vg,
+      complextype_fullpath_assignment_vg,
       fparam_output_vg
     } variablegeneration_t;
 
@@ -194,6 +196,8 @@ class generate_c_il_c: public generate_c_base_and_typeid_c, il_default_variable_
     symbol_c *fbname;
 
     variablegeneration_t wanted_variablegeneration;
+
+    bool base_needs_value;
 
   public:
     generate_c_il_c(stage4out_c *s4o_ptr, symbol_c *name, symbol_c *scope, const char *variable_prefix = NULL)
@@ -385,14 +389,28 @@ class generate_c_il_c: public generate_c_base_and_typeid_c, il_default_variable_
         else
           s4o.print(GET_VAR);
       }
+      bool leaf_is_wrapped = (symbol->datatype != NULL)
+          && !get_datatype_info_c::is_array(symbol->datatype)
+          && !get_datatype_info_c::is_structure(symbol->datatype);
+      bool use_fullpath = leaf_is_wrapped
+          && vartype != search_var_instance_decl_c::external_vt
+          && vartype != search_var_instance_decl_c::located_vt;
+
       s4o.print("(");
 
       variablegeneration_t old_wanted_variablegeneration = wanted_variablegeneration;
-      wanted_variablegeneration = complextype_base_vg;
-      symbol->accept(*this);
-      s4o.print(",");
-      wanted_variablegeneration = complextype_suffix_vg;
-      symbol->accept(*this);
+      if (use_fullpath) {
+        base_needs_value = false;
+        wanted_variablegeneration = complextype_base_fullpath_vg;
+        symbol->accept(*this);
+        s4o.print(",");
+      } else {
+        wanted_variablegeneration = complextype_base_vg;
+        symbol->accept(*this);
+        s4o.print(",");
+        wanted_variablegeneration = complextype_suffix_vg;
+        symbol->accept(*this);
+      }
       s4o.print(")");
       wanted_variablegeneration = old_wanted_variablegeneration;
       return NULL;
@@ -406,6 +424,7 @@ class generate_c_il_c: public generate_c_base_and_typeid_c, il_default_variable_
             bool negative = false) {
 
       bool type_is_complex = false;
+      bool use_fullpath = false;
       if (fb_symbol == NULL) {
         unsigned int vartype = search_var_instance_decl->get_vartype(symbol);
         type_is_complex = analyse_variable_c::contains_complex_type(symbol);
@@ -420,6 +439,12 @@ class generate_c_il_c: public generate_c_base_and_typeid_c, il_default_variable_
           s4o.print(SET_LOCATED);
         else
           s4o.print(SET_VAR);
+        bool leaf_is_wrapped = (symbol->datatype != NULL)
+            && !get_datatype_info_c::is_array(symbol->datatype)
+            && !get_datatype_info_c::is_structure(symbol->datatype);
+        use_fullpath = leaf_is_wrapped
+            && vartype != search_var_instance_decl_c::external_vt
+            && vartype != search_var_instance_decl_c::located_vt;
       }
       else {
         unsigned int vartype = search_var_instance_decl->get_vartype(fb_symbol);
@@ -435,32 +460,20 @@ class generate_c_il_c: public generate_c_base_and_typeid_c, il_default_variable_
         fb_symbol->accept(*this);
         s4o.print(".,");
       }
+      else if (use_fullpath) {
+        base_needs_value = false;
+        if (type_is_complex)
+          wanted_variablegeneration = complextype_fullpath_assignment_vg;
+        else
+          wanted_variablegeneration = complextype_fullpath_assignment_vg;
+      }
       else if (type_is_complex)
         wanted_variablegeneration = complextype_base_assignment_vg;
       else
         wanted_variablegeneration = assignment_vg;
       symbol->accept(*this);
-/*
       s4o.print(",");
-      if (negative) {
-        if (get_datatype_info_c::is_BOOL_compatible(this->current_operand->datatype))
-          s4o.print("!");
-        else
-          s4o.print("~");
-      }
-      wanted_variablegeneration = expression_vg;
-      print_check_function(type, value, fb_value);
-      if (type_is_complex) {
-        s4o.print(",");
-        wanted_variablegeneration = complextype_suffix_vg;
-        symbol->accept(*this);
-      }
-      s4o.print(")");
-      wanted_variablegeneration = expression_vg;
-      return NULL;
-*/
-      s4o.print(",");
-      if (type_is_complex) {
+      if (type_is_complex && !use_fullpath) {
         wanted_variablegeneration = complextype_suffix_vg;
         symbol->accept(*this);
       }
@@ -522,8 +535,18 @@ void *visit(symbolic_variable_c *symbol) {
       s4o.print(",");
       symbol->var_name->accept(*this);
       break;
+    case complextype_fullpath_assignment_vg:
+      this->print_variable_prefix();
+      s4o.print(",");
+      symbol->var_name->accept(*this);
+      base_needs_value = true;
+      break;
     case complextype_base_vg:
       generate_c_base_c::visit(symbol);
+      break;
+    case complextype_base_fullpath_vg:
+      generate_c_base_c::visit(symbol);
+      base_needs_value = true;
       break;
     case complextype_suffix_vg:
       break;
@@ -597,23 +620,51 @@ void *visit(structured_variable_c *symbol) {
         symbol->field_selector->accept(*this);
       }
       break;
+    case complextype_base_fullpath_vg:
+    case complextype_fullpath_assignment_vg:
+      symbol->record_variable->accept(*this);
+      if (!type_is_complex) {
+        s4o.print(".");
+        symbol->field_selector->accept(*this);
+        base_needs_value = true;
+      } else {
+        if (base_needs_value) s4o.print(".value");
+        s4o.print(".");
+        symbol->field_selector->accept(*this);
+        base_needs_value = (symbol->datatype != NULL
+            && !get_datatype_info_c::is_array(symbol->datatype)
+            && !get_datatype_info_c::is_structure(symbol->datatype));
+      }
+      break;
     case complextype_suffix_vg:
       symbol->record_variable->accept(*this);
       if (type_is_complex) {
         s4o.print(".");
         symbol->field_selector->accept(*this);
+        if (symbol->datatype != NULL
+            && !get_datatype_info_c::is_array(symbol->datatype)
+            && !get_datatype_info_c::is_structure(symbol->datatype))
+          s4o.print(".value");
       }
       break;
     case assignment_vg:
       symbol->record_variable->accept(*this);
       s4o.print(".");
       symbol->field_selector->accept(*this);
+      if (symbol->datatype != NULL
+          && !get_datatype_info_c::is_array(symbol->datatype)
+          && !get_datatype_info_c::is_structure(symbol->datatype))
+        s4o.print(".value");
       break;
     default:
       if (this->is_variable_prefix_null()) {
         symbol->record_variable->accept(*this);
         s4o.print(".");
         symbol->field_selector->accept(*this);
+        if (symbol->datatype != NULL
+            && !get_datatype_info_c::is_array(symbol->datatype)
+            && !get_datatype_info_c::is_structure(symbol->datatype))
+          s4o.print(".value");
       }
       else
         print_getter(symbol);
@@ -630,6 +681,21 @@ void *visit(array_variable_c *symbol) {
     case complextype_base_assignment_vg:
       symbol->subscripted_variable->accept(*this);
       break;
+    case complextype_base_fullpath_vg:
+    case complextype_fullpath_assignment_vg:
+      symbol->subscripted_variable->accept(*this);
+      if (base_needs_value) s4o.print(".value");
+
+      current_array_type = search_varfb_instance_type->get_type_id(symbol->subscripted_variable);
+      if (current_array_type == NULL) ERROR;
+
+      s4o.print(".table");
+      symbol->subscript_list->accept(*this);
+      base_needs_value = (symbol->datatype != NULL
+          && !get_datatype_info_c::is_array(symbol->datatype)
+          && !get_datatype_info_c::is_structure(symbol->datatype));
+      current_array_type = NULL;
+      break;
     case complextype_suffix_vg:
       symbol->subscripted_variable->accept(*this);
 
@@ -638,6 +704,10 @@ void *visit(array_variable_c *symbol) {
 
       s4o.print(".table");
       symbol->subscript_list->accept(*this);
+      if (symbol->datatype != NULL
+          && !get_datatype_info_c::is_array(symbol->datatype)
+          && !get_datatype_info_c::is_structure(symbol->datatype))
+        s4o.print(".value");
 
       current_array_type = NULL;
       break;
@@ -650,6 +720,10 @@ void *visit(array_variable_c *symbol) {
 
         s4o.print(".table");
         symbol->subscript_list->accept(*this);
+        if (symbol->datatype != NULL
+            && !get_datatype_info_c::is_array(symbol->datatype)
+            && !get_datatype_info_c::is_structure(symbol->datatype))
+          s4o.print(".value");
 
         current_array_type = NULL;
       }

@@ -33,7 +33,8 @@ class generate_c_inlinefcall_c: public generate_c_base_and_typeid_c {
       expression_vg,
       assignment_vg,
       complextype_base_vg,
-      complextype_suffix_vg
+      complextype_suffix_vg,
+      complextype_base_fullpath_vg
     } variablegeneration_t;
 
   private:
@@ -57,6 +58,8 @@ class generate_c_inlinefcall_c: public generate_c_base_and_typeid_c {
     search_var_instance_decl_c   *search_var_instance_decl;
 
     variablegeneration_t wanted_variablegeneration;
+
+    bool base_needs_value;
 
   public:
     generate_c_inlinefcall_c(stage4out_c *s4o_ptr, symbol_c *name, symbol_c *scope, const char *variable_prefix = NULL)
@@ -248,13 +251,27 @@ class generate_c_inlinefcall_c: public generate_c_base_and_typeid_c {
         s4o.print(GET_LOCATED);
       else
         s4o.print(GET_VAR);
-      s4o.print("(");
 
-      wanted_variablegeneration = complextype_base_vg;
-      symbol->accept(*this);
-      s4o.print(",");
-      wanted_variablegeneration = complextype_suffix_vg;
-      symbol->accept(*this);
+      bool leaf_is_wrapped = (symbol->datatype != NULL)
+          && !get_datatype_info_c::is_array(symbol->datatype)
+          && !get_datatype_info_c::is_structure(symbol->datatype);
+      bool use_fullpath = leaf_is_wrapped
+          && vartype != search_var_instance_decl_c::external_vt
+          && vartype != search_var_instance_decl_c::located_vt;
+
+      s4o.print("(");
+      if (use_fullpath) {
+        base_needs_value = false;
+        wanted_variablegeneration = complextype_base_fullpath_vg;
+        symbol->accept(*this);
+        s4o.print(",");
+      } else {
+        wanted_variablegeneration = complextype_base_vg;
+        symbol->accept(*this);
+        s4o.print(",");
+        wanted_variablegeneration = complextype_suffix_vg;
+        symbol->accept(*this);
+      }
       s4o.print(")");
       wanted_variablegeneration = expression_vg;
       return NULL;
@@ -275,13 +292,28 @@ class generate_c_inlinefcall_c: public generate_c_base_and_typeid_c {
         s4o.print(SET_LOCATED);
       else
         s4o.print(SET_VAR);
+
+      bool leaf_is_wrapped = (symbol->datatype != NULL)
+          && !get_datatype_info_c::is_array(symbol->datatype)
+          && !get_datatype_info_c::is_structure(symbol->datatype);
+      bool use_fullpath = leaf_is_wrapped
+          && vartype != search_var_instance_decl_c::external_vt
+          && vartype != search_var_instance_decl_c::located_vt;
+
       s4o.print("(,");
-      wanted_variablegeneration = complextype_base_vg;
-      symbol->accept(*this);
-      s4o.print(",");
-      if (analyse_variable_c::contains_complex_type(symbol)) {
-        wanted_variablegeneration = complextype_suffix_vg;
+      if (use_fullpath) {
+        base_needs_value = false;
+        wanted_variablegeneration = complextype_base_fullpath_vg;
         symbol->accept(*this);
+        s4o.print(",");
+      } else {
+        wanted_variablegeneration = complextype_base_vg;
+        symbol->accept(*this);
+        s4o.print(",");
+        if (analyse_variable_c::contains_complex_type(symbol)) {
+          wanted_variablegeneration = complextype_suffix_vg;
+          symbol->accept(*this);
+        }
       }
       s4o.print(",");
       wanted_variablegeneration = expression_vg;
@@ -321,6 +353,10 @@ class generate_c_inlinefcall_c: public generate_c_base_and_typeid_c {
       if (generating_inlinefunction) {
         if (wanted_variablegeneration == complextype_base_vg)
           generate_c_base_c::visit(symbol);
+        else if (wanted_variablegeneration == complextype_base_fullpath_vg) {
+          generate_c_base_c::visit(symbol);
+          base_needs_value = true;
+        }
         else if (wanted_variablegeneration == complextype_suffix_vg)
           return NULL;
         else
@@ -364,11 +400,30 @@ class generate_c_inlinefcall_c: public generate_c_base_and_typeid_c {
                 symbol->field_selector->accept(*this);
             }
             break;
+          case complextype_base_fullpath_vg:
+            symbol->record_variable->accept(*this);
+            if (!type_is_complex) {
+              s4o.print(".");
+              symbol->field_selector->accept(*this);
+              base_needs_value = true;
+            } else {
+              if (base_needs_value) s4o.print(".value");
+              s4o.print(".");
+              symbol->field_selector->accept(*this);
+              base_needs_value = (symbol->datatype != NULL
+                  && !get_datatype_info_c::is_array(symbol->datatype)
+                  && !get_datatype_info_c::is_structure(symbol->datatype));
+            }
+            break;
           case complextype_suffix_vg:
             symbol->record_variable->accept(*this);
             if (type_is_complex) {
               s4o.print(".");
               symbol->field_selector->accept(*this);
+              if (symbol->datatype != NULL
+                  && !get_datatype_info_c::is_array(symbol->datatype)
+                  && !get_datatype_info_c::is_structure(symbol->datatype))
+                s4o.print(".value");
             }
             break;
           default:
@@ -387,6 +442,20 @@ class generate_c_inlinefcall_c: public generate_c_base_and_typeid_c {
           case complextype_base_vg:
             symbol->subscripted_variable->accept(*this);
             break;
+          case complextype_base_fullpath_vg:
+            symbol->subscripted_variable->accept(*this);
+            if (base_needs_value) s4o.print(".value");
+
+            current_array_type = search_varfb_instance_type->get_type_id(symbol->subscripted_variable);
+            if (current_array_type == NULL) ERROR;
+
+            s4o.print(".table");
+            symbol->subscript_list->accept(*this);
+            base_needs_value = (symbol->datatype != NULL
+                && !get_datatype_info_c::is_array(symbol->datatype)
+                && !get_datatype_info_c::is_structure(symbol->datatype));
+            current_array_type = NULL;
+            break;
           case complextype_suffix_vg:
             symbol->subscripted_variable->accept(*this);
 
@@ -395,6 +464,10 @@ class generate_c_inlinefcall_c: public generate_c_base_and_typeid_c {
 
             s4o.print(".table");
             symbol->subscript_list->accept(*this);
+            if (symbol->datatype != NULL
+                && !get_datatype_info_c::is_array(symbol->datatype)
+                && !get_datatype_info_c::is_structure(symbol->datatype))
+              s4o.print(".value");
 
             current_array_type = NULL;
             break;

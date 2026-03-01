@@ -589,7 +589,20 @@ void *visit(array_spec_init_c *symbol) {
 void *visit(array_specification_c *symbol) {
   TRACE("array_specification_c");
   // The 2nd and 3rd argument of a call to the __DECLARE_ARRAY_TYPE macro!
-  symbol->non_generic_type_name->accept(/*generate_c_print_typename*/*generate_c_typeid);
+  // For simple element types, use __IEC_type_t wrapper so each element has its own flags
+  {
+    symbol_c *elem_basetype = search_base_type_c::get_basetype_decl(symbol->non_generic_type_name);
+    bool elem_is_simple = (elem_basetype != NULL)
+        && !get_datatype_info_c::is_array(elem_basetype)
+        && !get_datatype_info_c::is_structure(elem_basetype);
+    if (elem_is_simple) {
+      s4o_incl.print("__IEC_");
+      symbol->non_generic_type_name->accept(*generate_c_typeid);
+      s4o_incl.print("_t");
+    } else {
+      symbol->non_generic_type_name->accept(*generate_c_typeid);
+    }
+  }
   s4o_incl.print(",");
   current_basetypedeclaration = arraysubrange_bd;
   symbol->array_subrange_list->accept(*this); // always calls array_subrange_list_c, which the iterator_visitor_c base class will call subrange_c
@@ -741,7 +754,18 @@ void *visit(structure_element_declaration_list_c *symbol) {
 void *visit(structure_element_declaration_c *symbol) {
   TRACE("structure_element_declaration_c");
 
-  symbol->spec_init->accept(/*generate_c_print_typename*/*generate_c_typeid);
+  symbol_c *elem_type = spec_init_sperator_c::get_spec(symbol->spec_init);
+  symbol_c *elem_basetype = search_base_type_c::get_basetype_decl(elem_type);
+  bool elem_is_simple = (elem_basetype != NULL)
+      && !get_datatype_info_c::is_array(elem_basetype)
+      && !get_datatype_info_c::is_structure(elem_basetype);
+  if (elem_is_simple) {
+    s4o_incl.print("__IEC_");
+    elem_type->accept(*generate_c_typeid);
+    s4o_incl.print("_t");
+  } else {
+    symbol->spec_init->accept(*generate_c_typeid);
+  }
   s4o_incl.print(" ");
   symbol->structure_element_name->accept(*generate_c_typeid);
   s4o_incl.print(";\n");

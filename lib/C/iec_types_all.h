@@ -76,13 +76,13 @@
 typedef IEC_##type type;\
 \
 typedef struct {\
-  IEC_##type value;\
   IEC_BYTE flags;\
+  IEC_##type value;\
 } __IEC_##type##_t;\
 \
 typedef struct {\
-  IEC_##type *value;\
   IEC_BYTE flags;\
+  IEC_##type *value;\
 } __IEC_##type##_p;
 
 

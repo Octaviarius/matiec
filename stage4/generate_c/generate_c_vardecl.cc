@@ -75,6 +75,7 @@ class generate_c_array_initialization_c: public generate_c_base_and_typeid_c {
     symbol_c* array_base_type;
     symbol_c* array_default_value;
     symbol_c* array_default_initialization;
+    bool wrap_elements;
 
   private:
     int current_dimension;
@@ -91,9 +92,23 @@ class generate_c_array_initialization_c: public generate_c_base_and_typeid_c {
       defined_values_count = 0;
       current_initialization_count = 0;
       array_base_type = array_default_value = array_default_initialization = NULL;
-      
+      wrap_elements = false;
+
       current_mode = arraysize_am;
       array_specification->accept(*this);
+
+      if (array_base_type != NULL) {
+        symbol_c *elem_basetype = search_base_type_c::get_basetype_decl(array_base_type);
+        wrap_elements = (elem_basetype != NULL)
+            && !get_datatype_info_c::is_array(elem_basetype)
+            && !get_datatype_info_c::is_structure(elem_basetype);
+      }
+    }
+
+    void print_element_value(symbol_c *value) {
+      if (wrap_elements) s4o.print("{0,");
+      value->accept(*this);
+      if (wrap_elements) s4o.print("}");
     }
 
     void set_array_default_initialisation(symbol_c *array_initialization) {
@@ -135,7 +150,7 @@ class generate_c_array_initialization_c: public generate_c_base_and_typeid_c {
         for (unsigned long long int i = defined_values_count; i < array_size; i++) {
           if (defined_values_count > 0)
             s4o.print(",");
-          array_default_value->accept(*this);
+          print_element_value(array_default_value);
           defined_values_count++;
         }
       }
@@ -249,7 +264,10 @@ class generate_c_array_initialization_c: public generate_c_base_and_typeid_c {
                 ERROR;
               if (defined_values_count > 0)
                 s4o.print(",");
-              symbol->get_element(i)->accept(*this);
+              if (dynamic_cast<array_initial_elements_c *>(symbol->get_element(i)) != NULL)
+                symbol->get_element(i)->accept(*this);
+              else
+                print_element_value(symbol->get_element(i));
               defined_values_count++;
             }
             else {
@@ -305,10 +323,10 @@ class generate_c_array_initialization_c: public generate_c_base_and_typeid_c {
             if (i > 0)
               s4o.print(",");
             if (symbol->array_initial_element != NULL) {
-              symbol->array_initial_element->accept(*this);
+              print_element_value(symbol->array_initial_element);
             }
             else {
-              array_default_value->accept(*this);
+              print_element_value(array_default_value);
             }
           }
           if (initial_element_count > 1)
@@ -657,6 +675,11 @@ class generate_c_structure_initialization_c: public generate_c_base_and_typeid_c
         
         initialization_analyzer_c initialization_analyzer(element_value);
             
+        symbol_c *elem_basetype = search_base_type_c::get_basetype_decl(current_element_type);
+        bool wrap_element = (elem_basetype != NULL)
+            && !get_datatype_info_c::is_array(elem_basetype)
+            && !get_datatype_info_c::is_structure(elem_basetype);
+
         if (initialization_analyzer.get_initialization_type() == initialization_analyzer_c::struct_it) {
           generate_c_structure_initialization_c *structure_initialization = new generate_c_structure_initialization_c(&s4o);
           structure_initialization->init_structure_default(current_element_type);
@@ -664,7 +687,9 @@ class generate_c_structure_initialization_c: public generate_c_base_and_typeid_c
           delete structure_initialization;
         }
         else {
+          if (wrap_element) s4o.print("{0,");
           element_value->accept(*this);
+          if (wrap_element) s4o.print("}");
         }
       }
       s4o.print("}");
