@@ -324,19 +324,12 @@ void *visit(structured_variable_c *symbol) {
   switch (wanted_variablegeneration) {
     case complextype_base_vg:
       symbol->record_variable->accept(*this);
-      /* NOTE: The following test includes a special case for SFC Steps. They are currently mapped onto a C data structure
-       *        that does not follow the standard IEC_<typename> pattern used for user defined structure datatypes 
-       *        (i.e. it does not include the 'values' and 'flag' structure 
-       *        elements that are tested by __GET_VAR and __SET_VAR acessor macros defined in acessor.h). However, the
-       *        STEP.T and STEP.X elements of this step structure are of the IEC_BOOL and IEC_TIME datatypes, and are 
-       *        actually structures that do have the 'value' and 'flags' elements. So, it is safe to say that any  variable
-       *        that is a STEPname is not of a complex type, as its .T and .X elements are and can later be safely accessed
-       *        using the __SET_VAR and __GET_VAR macros.
-       * 
-       *        For the above reason, a STEP must be handled as a FB, i.e. it does NOT contain the 'flags' and 'value' elements!
-       */
-      if (   get_datatype_info_c::is_function_block(symbol->record_variable->datatype)
-          || get_datatype_info_c::is_sfc_step      (symbol->record_variable->datatype)) {
+      if (get_datatype_info_c::is_sfc_step(symbol->record_variable->datatype)) {
+        /* SFC step properties are flat variables: StepName_X, StepName_T */
+        s4o.print("_");
+        symbol->field_selector->accept(*this);
+      }
+      else if (get_datatype_info_c::is_function_block(symbol->record_variable->datatype)) {
         if (NULL == symbol->record_variable->scope) ERROR;
         search_var_instance_decl_c search_var_instance_decl(symbol->record_variable->scope);
         if      (search_var_instance_decl_c::external_vt == search_var_instance_decl.get_vartype(get_var_name_c::get_last_field(symbol->record_variable)))

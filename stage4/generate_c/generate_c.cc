@@ -108,7 +108,6 @@
 #define FB_FUNCTION_PARAM "data__"
 
 
-#define SFC_STEP_ACTION_PREFIX "__SFC_"
 
 
 /* Variable declaration symbol for accessor macros */
@@ -1150,11 +1149,6 @@ class generate_c_pous_c {
         s4o.print(s4o.indent_spaces + "}\n\n");
 
         /* (C) Function with FB body */
-        /* (C.1) Step definitions */
-        sfcdecl->generate(symbol->fblock_body, generate_c_sfcdecl_c::stepdef_sd);
-      
-        /* (C.2) Action definitions */
-        sfcdecl->generate(symbol->fblock_body, generate_c_sfcdecl_c::actiondef_sd);
         delete sfcdecl;
 
         /* (C.3) Function definition */
@@ -1226,14 +1220,6 @@ class generate_c_pous_c {
         symbol->fblock_name->accept(print_base);
         s4o.print(FB_FUNCTION_SUFFIX);
         s4o.print(s4o.indent_spaces + "() \n\n");
-      
-        /* (C.6) Step undefinitions */
-        sfcdecl = new generate_c_sfcdecl_c(&s4o, symbol, FB_FUNCTION_PARAM"->");
-        sfcdecl->generate(symbol->fblock_body, generate_c_sfcdecl_c::stepundef_sd);
-      
-        /* (C.7) Action undefinitions */
-        sfcdecl->generate(symbol->fblock_body, generate_c_sfcdecl_c::actionundef_sd);
-        delete sfcdecl;
       
         s4o.indent_left();
         s4o.print("\n\n\n\n");
@@ -1346,13 +1332,6 @@ class generate_c_pous_c {
         s4o.print(s4o.indent_spaces + "}\n\n");
 
         /* (C) Function with PROGRAM body */
-        /* (C.1) Step definitions */
-        sfcdecl = new generate_c_sfcdecl_c(&s4o, symbol, FB_FUNCTION_PARAM"->");
-        sfcdecl->generate(symbol->function_block_body, generate_c_sfcdecl_c::stepdef_sd);
-      
-        /* (C.2) Action definitions */
-        sfcdecl->generate(symbol->function_block_body, generate_c_sfcdecl_c::actiondef_sd);
-        delete sfcdecl;
 
         /* (C.3) Function definition */
         s4o.print("// Code part\n");
@@ -1390,17 +1369,9 @@ class generate_c_pous_c {
         s4o.print(FB_FUNCTION_SUFFIX);
         s4o.print(s4o.indent_spaces + "() \n\n");
       
-        /* (C.6) Step undefinitions */
-        sfcdecl = new generate_c_sfcdecl_c(&s4o, symbol, FB_FUNCTION_PARAM"->");
-        sfcdecl->generate(symbol->function_block_body, generate_c_sfcdecl_c::stepundef_sd);
-        
-        /* (C.7) Action undefinitions */
-        sfcdecl->generate(symbol->function_block_body, generate_c_sfcdecl_c::actionundef_sd); 
-        delete sfcdecl;
-      
         s4o.indent_left();
         s4o.print("\n\n\n\n");
-      }  
+      }
       return;
     }
     /****************************************/

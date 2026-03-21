@@ -130,25 +130,6 @@ __DECLARE_COMPLEX_STRUCT(type)
 /* i.e. this file cannot be included aside windows.h */
 __ANY(__DECLARE_IEC_TYPE)
 
-typedef struct {
-  __IEC_BOOL_t X;  // state;  --> current step state. 0 : inative, 1: active.   We name it 'X' as it may be accessed from IEC 61131.3 code using stepname.X syntax!!
-  BOOL prev_state; // previous step state. 0 : inative, 1: active
-  __IEC_TIME_t T;  // elapsed_time;  --> time since step is active.   We name it 'T' as it may be accessed from IEC 61131.3 code using stepname.T syntax!!
-} STEP;
-
-
-typedef struct {
-  BOOL stored;  // action storing state. 0 : not stored, 1: stored
-  __IEC_BOOL_t state; // current action state. 0 : inative, 1: active
-  BOOL set;   // set have been requested (reset each time the body is evaluated)
-  BOOL reset; // reset have been requested (reset each time the body is evaluated)
-  TIME set_remaining_time;    // time before set will be requested
-  TIME reset_remaining_time;  // time before reset will be requested
-} ACTION;
-
-/* Extra debug types for SFC */
-#define __ANY_SFC(DO) DO(STEP) DO(TRANSITION) DO(ACTION)
-
 /* Enumerate native types */
 #define __decl_enum_type(TYPENAME) TYPENAME##_ENUM,
 #define __decl_enum_pointer(TYPENAME) TYPENAME##_P_ENUM,

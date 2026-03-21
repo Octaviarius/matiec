@@ -32,31 +32,45 @@ typedef struct
 /***********************************************************************/
 /***********************************************************************/
 
+/* Print step names from a steps_c, separated by sep */
+static void print_steps_names(stage4out_c &s4o, generate_c_base_and_typeid_c &printer, symbol_c *steps, const char *sep) {
+  steps_c *s = dynamic_cast<steps_c *>(steps);
+  if (s == NULL) return;
+  if (s->step_name != NULL) {
+    s->step_name->accept(printer);
+  } else if (s->step_name_list != NULL) {
+    step_name_list_c *lst = dynamic_cast<step_name_list_c *>(s->step_name_list);
+    if (lst != NULL) {
+      for (int i = 0; i < lst->n; i++) {
+        if (i > 0) s4o.print(sep);
+        lst->get_element(i)->accept(printer);
+      }
+    }
+  }
+}
+
+/* Print a transition variable name: FromStep_TO_ToStep */
+static void print_transition_name(stage4out_c &s4o, generate_c_base_and_typeid_c &printer, transition_c *t) {
+  print_steps_names(s4o, printer, t->from_steps, "_");
+  s4o.print("_TO_");
+  print_steps_names(s4o, printer, t->to_steps, "_");
+}
+
 class generate_c_sfcdecl_c: protected generate_c_base_and_typeid_c {
-  
+
   public:
       typedef enum {
         sfcdecl_sd,
-        sfcinit_sd,
-        stepcount_sd,
-        stepdef_sd,
-        stepundef_sd,
-        actiondef_sd,
-        actionundef_sd,
-        actioncount_sd,
-        transitioncount_sd
+        sfcinit_sd
        } sfcdeclaration_t;
-  
+
   private:
-    int step_number;
-    int action_number;
-    int transition_number;
     std::list<VARIABLE> variable_list;
-    
+
     sfcdeclaration_t wanted_sfcdeclaration;
 
     search_var_instance_decl_c *search_var_instance_decl;
-    
+
   public:
     generate_c_sfcdecl_c(stage4out_c *s4o_ptr, symbol_c *scope, const char *variable_prefix = NULL)
     : generate_c_base_and_typeid_c(s4o_ptr) {
@@ -67,273 +81,145 @@ class generate_c_sfcdecl_c: protected generate_c_base_and_typeid_c {
       variable_list.clear();
       delete search_var_instance_decl;
     }
-    
+
     void generate(symbol_c *symbol, sfcdeclaration_t declaration_type) {
       wanted_sfcdeclaration = declaration_type;
 
       symbol->accept(*this);
     }
 
+    void print_step_decl(symbol_c *step_name) {
+      s4o.print(s4o.indent_spaces + "__DECLARE_VAR(BOOL,");
+      step_name->accept(*this);
+      s4o.print("_X)\n");
+      s4o.print(s4o.indent_spaces + "__DECLARE_VAR(TIME,");
+      step_name->accept(*this);
+      s4o.print("_T)\n");
+      s4o.print(s4o.indent_spaces + "__DECLARE_VAR(BOOL,");
+      step_name->accept(*this);
+      s4o.print("_prev_state)\n");
+    }
+
+    void print_step_init(symbol_c *step_name, bool is_initial) {
+      s4o.print(s4o.indent_spaces);
+      s4o.print(SET_VAR);
+      s4o.print("(");
+      print_variable_prefix();
+      s4o.print(",");
+      step_name->accept(*this);
+      s4o.print("_X,,");
+      s4o.print(is_initial ? "1" : "0");
+      s4o.print(");\n");
+
+      s4o.print(s4o.indent_spaces);
+      s4o.print(SET_VAR);
+      s4o.print("(");
+      print_variable_prefix();
+      s4o.print(",");
+      step_name->accept(*this);
+      s4o.print("_T,,__time_to_timespec(1, 0, 0, 0, 0, 0));\n");
+
+      s4o.print(s4o.indent_spaces);
+      s4o.print(SET_VAR);
+      s4o.print("(");
+      print_variable_prefix();
+      s4o.print(",");
+      step_name->accept(*this);
+      s4o.print("_prev_state,,0);\n");
+    }
+
+    void print_action_decl(symbol_c *action_name) {
+      const char *suffixes[] = {"_Q", "_stored", "_set", "_reset"};
+      for (int i = 0; i < 4; i++) {
+        s4o.print(s4o.indent_spaces + "__DECLARE_VAR(BOOL,");
+        action_name->accept(*this);
+        s4o.print(suffixes[i]);
+        s4o.print(")\n");
+      }
+      const char *time_suffixes[] = {"_set_remaining_time", "_reset_remaining_time"};
+      for (int i = 0; i < 2; i++) {
+        s4o.print(s4o.indent_spaces + "__DECLARE_VAR(TIME,");
+        action_name->accept(*this);
+        s4o.print(time_suffixes[i]);
+        s4o.print(")\n");
+      }
+    }
+
+    void print_set_var_init(symbol_c *name, const char *suffix, const char *value) {
+      s4o.print(s4o.indent_spaces);
+      s4o.print(SET_VAR);
+      s4o.print("(");
+      print_variable_prefix();
+      s4o.print(",");
+      name->accept(*this);
+      s4o.print(suffix);
+      s4o.print(",,");
+      s4o.print(value);
+      s4o.print(");\n");
+    }
+
+    void print_action_init(symbol_c *action_name) {
+      print_set_var_init(action_name, "_Q", "0");
+      print_set_var_init(action_name, "_stored", "0");
+      print_set_var_init(action_name, "_set", "0");
+      print_set_var_init(action_name, "_reset", "0");
+      print_set_var_init(action_name, "_set_remaining_time", "__time_to_timespec(1, 0, 0, 0, 0, 0)");
+      print_set_var_init(action_name, "_reset_remaining_time", "__time_to_timespec(1, 0, 0, 0, 0, 0)");
+    }
+
 /*********************************************/
 /* B.1.6  Sequential function chart elements */
 /*********************************************/
-    
+
     void *visit(sequential_function_chart_c *symbol) {
-      step_number = 0;
-      action_number = 0;
-      transition_number = 0;
       switch (wanted_sfcdeclaration) {
         case sfcdecl_sd:
           for(int i = 0; i < symbol->n; i++)
             symbol->get_element(i)->accept(*this);
-          
-          /* steps table declaration */
-          s4o.print(s4o.indent_spaces + "STEP __step_list[");
-          s4o.print(step_number);
-          s4o.print("];\n");
-          s4o.print(s4o.indent_spaces + "UINT __nb_steps;\n");
-          
-          /* actions table declaration */
-          s4o.print(s4o.indent_spaces + "ACTION __action_list[");
-          s4o.print(action_number);
-          s4o.print("];\n");
-          s4o.print(s4o.indent_spaces + "UINT __nb_actions;\n");
-          
-          /* transitions table declaration */
-          s4o.print(s4o.indent_spaces + "__IEC_BOOL_t __transition_list[");
-          s4o.print(transition_number);
-          s4o.print("];\n");
-          
-          /* transitions debug table declaration */
-          s4o.print(s4o.indent_spaces + "__IEC_BOOL_t __debug_transition_list[");
-          s4o.print(transition_number);
-          s4o.print("];\n");
-          s4o.print(s4o.indent_spaces + "UINT __nb_transitions;\n");
-          
+
           /* last_ticktime declaration */
-          s4o.print(s4o.indent_spaces + "TIME __lasttick_time;\n");
+          s4o.print(s4o.indent_spaces + "__DECLARE_VAR(TIME,__lasttick_time)\n");
           break;
         case sfcinit_sd:
-          s4o.print(s4o.indent_spaces);
-          s4o.print("UINT i;\n");
-          
-          /* steps table count */
-          wanted_sfcdeclaration = stepcount_sd;
           for(int i = 0; i < symbol->n; i++)
             symbol->get_element(i)->accept(*this);
-          s4o.print(s4o.indent_spaces);
-          print_variable_prefix();
-          s4o.print("__nb_steps = ");
-          s4o.print(step_number);
-          s4o.print(";\n");
-          step_number = 0;
-          wanted_sfcdeclaration = sfcinit_sd;
-          
-          /* steps table initialisation */
-          s4o.print(s4o.indent_spaces + "static const STEP temp_step = {{0, 0}, 0, {{0, 0}, 0}};\n");
-          s4o.print(s4o.indent_spaces + "for(i = 0; i < ");
-          print_variable_prefix();
-          s4o.print("__nb_steps; i++) {\n");
-          s4o.indent_right();
-          s4o.print(s4o.indent_spaces);
-          print_variable_prefix();
-          s4o.print("__step_list[i] = temp_step;\n");
-          s4o.indent_left();
-          s4o.print(s4o.indent_spaces + "}\n");
-          for(int i = 0; i < symbol->n; i++)
-            symbol->get_element(i)->accept(*this);
-          
-          /* actions table count */
-          wanted_sfcdeclaration = actioncount_sd;
-          for(int i = 0; i < symbol->n; i++)
-            symbol->get_element(i)->accept(*this);
-          s4o.print(s4o.indent_spaces);
-          print_variable_prefix();
-          s4o.print("__nb_actions = ");
-          s4o.print(action_number);
-          s4o.print(";\n");
-          action_number = 0;
-          wanted_sfcdeclaration = sfcinit_sd;
-          
-          /* actions table initialisation */
-          s4o.print(s4o.indent_spaces + "static const ACTION temp_action = {0, {0, 0}, 0, 0, {0, 0}, {0, 0}};\n");
-          s4o.print(s4o.indent_spaces + "for(i = 0; i < ");
-          print_variable_prefix();
-          s4o.print("__nb_actions; i++) {\n");
-          s4o.indent_right();
-          s4o.print(s4o.indent_spaces);
-          print_variable_prefix();
-          s4o.print("__action_list[i] = temp_action;\n");
-          s4o.indent_left();
-          s4o.print(s4o.indent_spaces + "}\n");
-          
-          /* transitions table count */
-          wanted_sfcdeclaration = transitioncount_sd;
-          for(int i = 0; i < symbol->n; i++)
-            symbol->get_element(i)->accept(*this);
-          s4o.print(s4o.indent_spaces);
-          print_variable_prefix();
-          s4o.print("__nb_transitions = ");
-          s4o.print(transition_number);
-          s4o.print(";\n");
-          transition_number = 0;
-          wanted_sfcdeclaration = sfcinit_sd;
 
           /* last_ticktime initialisation */
-          s4o.print(s4o.indent_spaces);
-          print_variable_prefix();
-          s4o.print("__lasttick_time = __CURRENT_TIME;\n");
-          break;
-        case stepdef_sd:
-          s4o.print("// Steps definitions\n");
-          for(int i = 0; i < symbol->n; i++)
-            symbol->get_element(i)->accept(*this);
-          s4o.print("\n");
-          break;
-        case actiondef_sd:
-          s4o.print("// Actions definitions\n");
-          {
-            // first fill up the this->variable_list variable!
-            wanted_sfcdeclaration = actioncount_sd;
-            for(int i = 0; i < symbol->n; i++)
-               symbol->get_element(i)->accept(*this);
-            action_number = 0; // reset the counter!
-            wanted_sfcdeclaration = actiondef_sd;
-            // Now do the defines for actions!
-            for(int i = 0; i < symbol->n; i++)
-              symbol->get_element(i)->accept(*this);
-            // Now do the defines for actions that reference a variable instead of an action block!
-            std::list<VARIABLE>::iterator pt;
-            for(pt = variable_list.begin(); pt != variable_list.end(); pt++) {
-              s4o.print("#define ");
-              s4o.print(SFC_STEP_ACTION_PREFIX);
-              pt->symbol->accept(*this);
-              s4o.print(" ");
-              s4o.print(action_number);
-              s4o.print("\n");
-              action_number++;
-            }
-          }
-          s4o.print("\n");
-          break;
-        case stepundef_sd:
-          s4o.print("// Steps undefinitions\n");
-          for(int i = 0; i < symbol->n; i++)
-            symbol->get_element(i)->accept(*this);
-          s4o.print("\n");
-          break;
-        case actionundef_sd:
-          s4o.print("// Actions undefinitions\n");
-          for(int i = 0; i < symbol->n; i++)
-            symbol->get_element(i)->accept(*this);
-          {
-            // first fill up the this->variable_list variable!
-            wanted_sfcdeclaration = actioncount_sd;
-            for(int i = 0; i < symbol->n; i++)
-               symbol->get_element(i)->accept(*this);
-            wanted_sfcdeclaration = actionundef_sd;
-            std::list<VARIABLE>::iterator pt;
-            for(pt = variable_list.begin(); pt != variable_list.end(); pt++) {
-              s4o.print("#undef ");
-              s4o.print(SFC_STEP_ACTION_PREFIX);
-              pt->symbol->accept(*this);
-              s4o.print("\n");
-            }
-          }
-          s4o.print("\n");
-          break;
-        default:
-          break;
-      }
-      return NULL;
-    }
-    
-    void *visit(initial_step_c *symbol) {
-      switch (wanted_sfcdeclaration) {
-        case actioncount_sd:
-          symbol->action_association_list->accept(*this);
-          break;
-        case sfcdecl_sd:
-          symbol->action_association_list->accept(*this);
-        case stepcount_sd:
-          step_number++;
-          break;
-        case sfcinit_sd:
           s4o.print(s4o.indent_spaces);
           s4o.print(SET_VAR);
           s4o.print("(");
           print_variable_prefix();
-          s4o.print(",__step_list[");
-          s4o.print(step_number);
-          s4o.print("].X,,1);\n");
-          step_number++;
-          break;
-        case stepdef_sd:
-          s4o.print("#define ");
-          symbol->step_name->accept(*this);
-          s4o.print(" __step_list[");
-          s4o.print(step_number);
-          s4o.print("]\n");
-
-          s4o.print("#define ");
-          s4o.print(SFC_STEP_ACTION_PREFIX);
-          symbol->step_name->accept(*this);
-          s4o.print(" ");
-          s4o.print(step_number);
-          s4o.print("\n");
-          step_number++;
-          break;
-        case stepundef_sd:
-          s4o.print("#undef ");
-          symbol->step_name->accept(*this);
-          s4o.print("\n");
-
-          s4o.print("#undef ");
-          s4o.print(SFC_STEP_ACTION_PREFIX);
-          symbol->step_name->accept(*this);
-          s4o.print("\n");
+          s4o.print(",__lasttick_time,,__CURRENT_TIME);\n");
           break;
         default:
           break;
       }
       return NULL;
     }
-    
+
+    void *visit(initial_step_c *symbol) {
+      switch (wanted_sfcdeclaration) {
+        case sfcdecl_sd:
+          print_step_decl(symbol->step_name);
+          symbol->action_association_list->accept(*this);
+          break;
+        case sfcinit_sd:
+          print_step_init(symbol->step_name, true);
+          break;
+        default:
+          break;
+      }
+      return NULL;
+    }
+
     void *visit(step_c *symbol) {
       switch (wanted_sfcdeclaration) {
-        case actioncount_sd:
-          symbol->action_association_list->accept(*this);
-          break;
         case sfcdecl_sd:
+          print_step_decl(symbol->step_name);
           symbol->action_association_list->accept(*this);
-        case stepcount_sd:
+          break;
         case sfcinit_sd:
-          step_number++;
-          break;
-        case stepdef_sd:
-          s4o.print("#define ");
-          symbol->step_name->accept(*this);
-          s4o.print(" __step_list[");
-          s4o.print(step_number);
-          s4o.print("]\n");
-
-          s4o.print("#define ");
-          s4o.print(SFC_STEP_ACTION_PREFIX);
-          symbol->step_name->accept(*this);
-          s4o.print(" ");
-          s4o.print(step_number);
-          s4o.print("\n");
-          step_number++;
-          break;
-        case stepundef_sd:
-          s4o.print("#undef ");
-          symbol->step_name->accept(*this);
-          s4o.print("\n");
-
-          s4o.print("#undef ");
-          s4o.print(SFC_STEP_ACTION_PREFIX);
-          symbol->step_name->accept(*this);
-          s4o.print("\n");
+          print_step_init(symbol->step_name, false);
           break;
         default:
           break;
@@ -342,6 +228,7 @@ class generate_c_sfcdecl_c: protected generate_c_base_and_typeid_c {
     }
 
     void *visit(action_association_c *symbol) {
+      if (wanted_sfcdeclaration != sfcdecl_sd) return NULL;
       /* we try to find the variable instance declaration, to determine if symbol is variable... */
       symbol_c *var_decl = search_var_instance_decl->get_decl(symbol->action_name);
       if (var_decl != NULL) {
@@ -354,7 +241,7 @@ class generate_c_sfcdecl_c: protected generate_c_base_and_typeid_c {
         variable = new VARIABLE;
         variable->symbol = (identifier_c*)(symbol->action_name);
         variable_list.push_back(*variable);
-        action_number++;
+        print_action_decl(symbol->action_name);
       }
       return NULL;
     }
@@ -362,8 +249,18 @@ class generate_c_sfcdecl_c: protected generate_c_base_and_typeid_c {
     void *visit(transition_c *symbol) {
       switch (wanted_sfcdeclaration) {
         case sfcdecl_sd:
-        case transitioncount_sd:
-          transition_number++;
+          s4o.print(s4o.indent_spaces + "__DECLARE_VAR(BOOL,");
+          print_transition_name(s4o, *this, symbol);
+          s4o.print(")\n");
+          break;
+        case sfcinit_sd:
+          s4o.print(s4o.indent_spaces);
+          s4o.print(SET_VAR);
+          s4o.print("(");
+          print_variable_prefix();
+          s4o.print(",");
+          print_transition_name(s4o, *this, symbol);
+          s4o.print(",,0);\n");
           break;
         default:
           break;
@@ -373,24 +270,11 @@ class generate_c_sfcdecl_c: protected generate_c_base_and_typeid_c {
 
     void *visit(action_c *symbol) {
       switch (wanted_sfcdeclaration) {
-        case actiondef_sd:
-          s4o.print("#define ");
-          s4o.print(SFC_STEP_ACTION_PREFIX);
-          symbol->action_name->accept(*this);
-          s4o.print(" ");
-          s4o.print(action_number);
-          s4o.print("\n");
-          action_number++;
-          break;
-        case actionundef_sd:
-          s4o.print("#undef ");
-          s4o.print(SFC_STEP_ACTION_PREFIX);
-          symbol->action_name->accept(*this);
-          s4o.print("\n");
-          break;
-        case actioncount_sd:
         case sfcdecl_sd:
-          action_number++;
+          print_action_decl(symbol->action_name);
+          break;
+        case sfcinit_sd:
+          print_action_init(symbol->action_name);
           break;
         default:
           break;
@@ -401,7 +285,7 @@ class generate_c_sfcdecl_c: protected generate_c_base_and_typeid_c {
     void *visit(instruction_list_c *symbol) {
       return NULL;
     }
-    
+
     void *visit(statement_list_c *symbol) {
       return NULL;
     }
