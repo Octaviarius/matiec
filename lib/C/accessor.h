@@ -122,7 +122,7 @@ __DECLARE_COMPLEX_STRUCT(type)
 	__IEC_##type##_p name;
 #define __DECLARE_PROGRAM_INSTANCE(type, resource, name)\
 	type##_data__ resource##__##name;
-#define __DECLARE_TICKTIME(value)
+#define __DECLARE_CONFIGURATION(configuration_name, tick_time)
 
 
 // variable initialization macros

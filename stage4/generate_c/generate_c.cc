@@ -2843,7 +2843,10 @@ class generate_c_c: public iterator_visitor_c {
 
       symbol->resource_declarations->accept(*this);
 
-      globals_s4o.print("__DECLARE_TICKTIME(");
+      symbol->configuration_name->accept(*this);  /* refresh current_name (clobbered by resource visit above) */
+      globals_s4o.print("__DECLARE_CONFIGURATION(");
+      globals_s4o.print(current_name);
+      globals_s4o.print(", ");
       globals_s4o.print_long_long_integer(common_ticktime * (1000000 / MILLISECOND), false);
       globals_s4o.print(")\n");
 

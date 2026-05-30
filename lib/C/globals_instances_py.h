@@ -9,4 +9,4 @@
   (#name, #domain, #type, TypeClass.FB, type##__flat_count),
 #define __DECLARE_PROGRAM_INSTANCE(type, resource, name)\
   (#name, #resource, #type, TypeClass.PROGRAM, type##__flat_count),
-#define __DECLARE_TICKTIME(value)
+#define __DECLARE_CONFIGURATION(configuration_name, tick_time)
