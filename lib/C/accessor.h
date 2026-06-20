@@ -1,6 +1,3 @@
-#ifndef __ACCESSOR_H
-#define __ACCESSOR_H
-
 #define __INITIAL_VALUE(...) __VA_ARGS__
 
 // Types declaration macros
@@ -209,4 +206,3 @@ __DECLARE_COMPLEX_STRUCT(type)
 #define __SET_LOCATED(prefix, name, suffix, new_value)\
 	if (!(prefix name.flags & __IEC_FORCE_FLAG)) (*(prefix name.value)) suffix = new_value
 
-#endif //__ACCESSOR_H
