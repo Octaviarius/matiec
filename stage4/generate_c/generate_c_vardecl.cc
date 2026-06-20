@@ -23,6 +23,7 @@
  */
 
 #include <limits>  // required for std::numeric_limits<XXX>
+#include <vector>  // required for std::vector<XXX>
 
 class initialization_analyzer_c: public null_visitor_c {
   public:
@@ -82,6 +83,15 @@ class generate_c_array_initialization_c: public generate_c_base_and_typeid_c {
     unsigned long long int array_size;
     unsigned long long int defined_values_count;
     unsigned long long int current_initialization_count;
+    /* The size of each array dimension, from outermost to innermost.       */
+    /* Used to emit properly nested braces in the C initializer, so that a   */
+    /* multi-dimensional array (whose elements are wrapped in '{...}') is    */
+    /* not flattened into a single brace level (which would make the C       */
+    /* compiler bind each element to a whole sub-array instead).             */
+    std::vector<unsigned long long int> array_dimensions;
+    /* Number of array elements already emitted. Drives the nested brace     */
+    /* transitions in print_element_value().                                 */
+    unsigned long long int emitted_count;
 
   public:
     generate_c_array_initialization_c(stage4out_c *s4o_ptr): generate_c_base_and_typeid_c(s4o_ptr) {}
@@ -91,6 +101,8 @@ class generate_c_array_initialization_c: public generate_c_base_and_typeid_c {
       array_size = 1;
       defined_values_count = 0;
       current_initialization_count = 0;
+      emitted_count = 0;
+      array_dimensions.clear();
       array_base_type = array_default_value = array_default_initialization = NULL;
       wrap_elements = false;
 
@@ -105,10 +117,34 @@ class generate_c_array_initialization_c: public generate_c_base_and_typeid_c {
       }
     }
 
+    /* Emit the separator between the previously emitted element and the next */
+    /* one. For a single dimension array this is simply a ',', but for a      */
+    /* multi-dimensional array we must also close and re-open the braces of   */
+    /* every inner dimension that wraps around at this position.              */
+    void print_element_separator(void) {
+      if (emitted_count == 0)
+        return;
+      /* Count how many inner dimensions complete at this position. The       */
+      /* outermost dimension (index 0) is never closed here, it is closed by  */
+      /* init_array_values() at the very end.                                 */
+      int braces = 0;
+      unsigned long long int stride = 1;
+      for (int dim = (int)array_dimensions.size() - 1; dim >= 1; dim--) {
+        stride *= array_dimensions[dim];
+        if (emitted_count % stride == 0)
+          braces++;
+      }
+      for (int i = 0; i < braces; i++) s4o.print("}");
+      s4o.print(",");
+      for (int i = 0; i < braces; i++) s4o.print("{");
+    }
+
     void print_element_value(symbol_c *value) {
+      print_element_separator();
       if (wrap_elements) s4o.print("{0,");
       value->accept(*this);
       if (wrap_elements) s4o.print("}");
+      emitted_count++;
     }
 
     void set_array_default_initialisation(symbol_c *array_initialization) {
@@ -139,7 +175,11 @@ class generate_c_array_initialization_c: public generate_c_base_and_typeid_c {
     }
     
     void init_array_values(symbol_c *array_initialization) {
-      s4o.print("{{");
+      /* Open one brace for the (struct) array wrapper plus one brace for     */
+      /* each array dimension. The inner dimension braces are closed and      */
+      /* re-opened between elements by print_element_separator().             */
+      size_t open_braces = array_dimensions.size() + 1;
+      for (size_t i = 0; i < open_braces; i++) s4o.print("{");
 
       current_mode = initializationvalue_am;
       array_initialization->accept(*this);
@@ -148,14 +188,12 @@ class generate_c_array_initialization_c: public generate_c_base_and_typeid_c {
         array_default_initialization->accept(*this);
       if (defined_values_count < array_size) {
         for (unsigned long long int i = defined_values_count; i < array_size; i++) {
-          if (defined_values_count > 0)
-            s4o.print(",");
           print_element_value(array_default_value);
           defined_values_count++;
         }
       }
 
-      s4o.print("}}");
+      for (size_t i = 0; i < open_braces; i++) s4o.print("}");
     }
     
     void *visit(identifier_c *type_name) {
@@ -242,9 +280,10 @@ class generate_c_array_initialization_c: public generate_c_base_and_typeid_c {
         case arraysize_am:
           /* res = a * b; --->  Check for overflow by pre-condition: If (UINT_MAX / a) < b => overflow! */
           if ((std::numeric_limits< unsigned long long int >::max() / array_size) < symbol->dimension)
-            STAGE4_ERROR(symbol, symbol, "The array containing this subrange has a total number of elements larger than the maximum currently supported (%llu).", 
+            STAGE4_ERROR(symbol, symbol, "The array containing this subrange has a total number of elements larger than the maximum currently supported (%llu).",
                          std::numeric_limits< unsigned long long int >::max());
           array_size *= symbol->dimension;
+          array_dimensions.push_back(symbol->dimension);
           break;
         default:
           break;
@@ -262,8 +301,6 @@ class generate_c_array_initialization_c: public generate_c_base_and_typeid_c {
             if (current_initialization_count >= defined_values_count) {
               if (defined_values_count >= array_size)
                 ERROR;
-              if (defined_values_count > 0)
-                s4o.print(",");
               if (dynamic_cast<array_initial_elements_c *>(symbol->get_element(i)) != NULL)
                 symbol->get_element(i)->accept(*this);
               else
@@ -312,7 +349,6 @@ class generate_c_array_initialization_c: public generate_c_base_and_typeid_c {
             initial_element_count = temp_element_number;
             if (initial_element_count > 0) {
               defined_values_count++;
-              s4o.print(",");
             }
           }
           else
@@ -320,8 +356,6 @@ class generate_c_array_initialization_c: public generate_c_base_and_typeid_c {
           if (defined_values_count + initial_element_count > array_size)
             ERROR;
           for (unsigned long long int i = 0; i < initial_element_count; i++) {
-            if (i > 0)
-              s4o.print(",");
             if (symbol->array_initial_element != NULL) {
               print_element_value(symbol->array_initial_element);
             }
