@@ -341,6 +341,19 @@ static inline to_TYPENAME ___##BCD_TO_##to_TYPENAME##__##to_TYPENAME##__##from_T
 __ANY_NBIT(__to_anyuint_)
 #undef __iec_
 
+/* Clean up the type conversion generator helpers */
+#undef __convert_type
+#undef __convert_num_to_bool
+#undef __convert_time_to_bool
+#undef __to_anynum_
+#undef __to_anyint_
+#undef __to_anybit_
+#undef __to_anynbit_
+#undef __to_anysint_
+#undef __to_anyuint_
+#undef __to_anyreal_
+#undef __to_anydate_
+
 
 /***********************************/  
 /***********************************/  
@@ -496,6 +509,20 @@ __ANY_REAL(__acos)
 __ANY_REAL(__atan)
 
 
+/* Clean up the functions of one numeric variable generator helpers */
+#undef __numeric
+#undef __abs_signed
+#undef __abs_unsigned
+#undef __sqrt
+#undef __ln
+#undef __log
+#undef __exp
+#undef __sin
+#undef __cos
+#undef __tan
+#undef __asin
+#undef __acos
+#undef __atan
 
 /*****************************************************/
 /***   Table 24 - Standard arithmetic functions    ***/
@@ -621,6 +648,15 @@ static inline TYPENAME ___##MOVE__##TYPENAME##__##TYPENAME(EN_ENO_PARAMS TYPENAM
 }
 __ANY(__iec_)
 #undef __iec_
+
+/* Clean up the arithmetic generator helpers */
+#undef __arith_static
+#undef __add
+#undef __mul
+#undef __sub
+#undef __div
+#undef __mod
+#undef __in1_anyreal_
 
 
 
@@ -823,6 +859,12 @@ static inline TYPENAME ___NOT__##TYPENAME##__##TYPENAME(EN_ENO_PARAMS TYPENAME o
 }
 __ANY_NBIT(__iec_)
 #undef __iec_
+
+/* Clean up the bit string / shift generator helpers */
+#undef __in1_anynbit_
+#undef __shift_
+#undef __xorbool_expand
+#undef __arith_expand
 
 
 
@@ -1221,6 +1263,19 @@ __iec_(TIME)
 __ne_string(NE_STRING, STRING) /* The explicitly typed standard functions */
 __ne_string(NE__BOOL__STRING__STRING, STRING) /* Overloaded function */
 
+/* Clean up the selection / comparison generator helpers */
+#undef __extrem_
+#undef __STR_CMP
+#undef __in1_anyint_
+#undef __compare_
+#undef __compare_num
+#undef __compare_time
+#undef __compare_string
+#undef __ne_num
+#undef __ne_time
+#undef __ne_string
+#undef __VA_START
+
 
 
 
@@ -1477,6 +1532,12 @@ static inline TYPENAME ___FIND__##TYPENAME##__STRING__STRING(EN_ENO_PARAMS STRIN
 }
 __ANY_INT(__iec_)
 #undef __iec_
+
+/* Clean up the character string generator helpers */
+#undef __genoper_1p_
+#undef __left
+#undef __right
+#undef __mid
 
 
 /*********************************************/  
