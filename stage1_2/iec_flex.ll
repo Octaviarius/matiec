@@ -1115,6 +1115,13 @@ END_FUNCTION			unput_text(0); BEGIN(INITIAL);
 END_FUNCTION_BLOCK		unput_text(0); BEGIN(INITIAL);
 END_PROGRAM			unput_text(0); BEGIN(INITIAL);
 END_CONFIGURATION		unput_text(0); BEGIN(INITIAL);
+	/* Skip pragmas (including the '{{ ... }}' blocks that hold verbatim target code) as a
+	 * single opaque token. This must be done here, before the generic {comment_beg} rule, so
+	 * that a '(*' appearing _inside_ such a block (e.g. a C pointer dereference like '(*p)')
+	 * is not mistaken for the start of an IEC comment. Such a spurious comment would otherwise
+	 * run until the next '*)' - possibly the end of the file - swallowing the END_FUNCTION_BLOCK
+	 * that terminates the POU, and thus breaking the preparse of every POU that follows. */
+{pragma}			{}/* Ignore pragmas (and embedded '{{ ... }}' code) inside POU! */
 .|\n				{}/* Ignore text inside POU! (including the '\n' character!)) */
 }
 
