@@ -8526,10 +8526,46 @@ symbol_c *tree_root;
  * (line number) variable correctly.
  */
 const char *current_error_msg;
+
+/* When bison detects a syntax error it calls yyerror() _before_ running the
+ * grammar action that handles that error. Most syntax errors are caught by a
+ * dedicated error production that calls print_err_msg() with a precise location
+ * and a helpful message. However, when an error occurs at a place for which no
+ * error production exists, nothing at all used to be printed, and the user was
+ * left with only the final "Parsing failed ... Bailing out!" message with no
+ * clue as to _where_ the problem is.
+ *
+ * To avoid this, yyerror() now remembers the location of the offending look-ahead
+ * token (yylloc, kept up to date by flex) together with bison's own error message
+ * (which, thanks to YYERROR_VERBOSE, reads like "syntax error, unexpected X,
+ * expecting Y"). This pending error is flushed (i.e. actually printed) either:
+ *   - by the next call to yyerror(), if the previous error was never handled by a
+ *     dedicated error production, or
+ *   - once parsing is over (see flush_pending_syntax_error() call after yyparse()).
+ * A dedicated error production, when it runs, calls print_err_msg() which clears
+ * the pending error, so handled errors keep printing only their nice message and
+ * are never reported twice. */
+static bool        pending_syntax_error = false;
+static YYLTYPE     pending_syntax_error_loc;
+static const char *pending_syntax_error_msg;
+
+void flush_pending_syntax_error(void) {
+  if (!pending_syntax_error) return;
+  pending_syntax_error = false;  /* clear _before_ printing: print_err_msg() also clears it */
+  print_err_msg(pending_syntax_error_loc.first_line,   pending_syntax_error_loc.first_column,
+                pending_syntax_error_loc.first_file,    pending_syntax_error_loc.first_order,
+                pending_syntax_error_loc.last_line,     pending_syntax_error_loc.last_column,
+                pending_syntax_error_loc.last_file,     pending_syntax_error_loc.last_order,
+                pending_syntax_error_msg);
+}
+
 void yyerror (const char *error_msg) {
-  current_error_msg = error_msg;
-/* fprintf(stderr, "error %d: %s\n", yynerrs // global variable //, error_msg); */
-/*  print_include_stack(); */
+  /* the previous error, if any, was not caught by a dedicated error production: print it now */
+  flush_pending_syntax_error();
+  current_error_msg        = error_msg;
+  pending_syntax_error_msg = error_msg;
+  pending_syntax_error_loc = yylloc;   /* location of the look-ahead token that triggered the error */
+  pending_syntax_error     = true;
 }
 
 
@@ -8575,6 +8611,10 @@ void print_err_msg(int first_line,
                    const char *last_filename,
                    long int last_order,
                    const char *additional_error_msg) {
+
+  /* a dedicated error production (or another diagnostic) is reporting this error with a
+   * precise location and message, so the generic pending syntax error must not be printed too */
+  pending_syntax_error = false;
 
   const char *unknown_file = "<unknown_file>";
   if (first_filename == NULL) first_filename = unknown_file;
@@ -8806,7 +8846,9 @@ static int parse_files(const char *libfilename, const char *filename) {
   allow_ref_to_in_derived_datatypes    = runtime_options.ref_nonstand_extensions;
   //allow_ref_to_any = false;    /* we only allow REF_TO ANY in library functions/FBs, no matter what the user asks for in the command line */
 
-  if (yyparse() != 0) {
+  int parse_result = yyparse();
+  flush_pending_syntax_error();  /* make sure the last (unhandled) syntax error, if any, gets printed */
+  if (parse_result != 0) {
     fprintf (stderr, "\nParsing failed because of too many consecutive syntax errors. Bailing out!\n");
     exit(EXIT_FAILURE);
   }
