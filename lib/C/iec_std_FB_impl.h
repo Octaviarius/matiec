@@ -9,6 +9,7 @@ static void R_TRIG_init__(R_TRIG_data__ *data__, BOOL retain) {
   __INIT_VAR(data__->M,__BOOL_LITERAL(FALSE),retain)
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void R_TRIG_body__(R_TRIG_data__ *data__) {
   // Control execution
@@ -29,6 +30,7 @@ static void R_TRIG_body__(R_TRIG_data__ *data__) {
 __end:
   return;
 } // R_TRIG_body__() 
+#endif
 
 
 
@@ -42,6 +44,7 @@ static void F_TRIG_init__(F_TRIG_data__ *data__, BOOL retain) {
   __INIT_VAR(data__->M,__BOOL_LITERAL(FALSE),retain)
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void F_TRIG_body__(F_TRIG_data__ *data__) {
   // Control execution
@@ -62,6 +65,7 @@ static void F_TRIG_body__(F_TRIG_data__ *data__) {
 __end:
   return;
 } // F_TRIG_body__() 
+#endif
 
 
 
@@ -75,6 +79,7 @@ static void SR_init__(SR_data__ *data__, BOOL retain) {
   __INIT_VAR(data__->Q1,__BOOL_LITERAL(FALSE),retain)
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void SR_body__(SR_data__ *data__) {
   // Control execution
@@ -94,6 +99,7 @@ static void SR_body__(SR_data__ *data__) {
 __end:
   return;
 } // SR_body__() 
+#endif
 
 
 
@@ -107,6 +113,7 @@ static void RS_init__(RS_data__ *data__, BOOL retain) {
   __INIT_VAR(data__->Q1,__BOOL_LITERAL(FALSE),retain)
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void RS_body__(RS_data__ *data__) {
   // Control execution
@@ -126,6 +133,7 @@ static void RS_body__(RS_data__ *data__) {
 __end:
   return;
 } // RS_body__() 
+#endif
 
 
 
@@ -142,6 +150,7 @@ static void CTU_init__(CTU_data__ *data__, BOOL retain) {
   R_TRIG_init__(&data__->CU_T,retain);
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void CTU_body__(CTU_data__ *data__) {
   // Control execution
@@ -168,6 +177,7 @@ static void CTU_body__(CTU_data__ *data__) {
 __end:
   return;
 } // CTU_body__() 
+#endif
 
 
 
@@ -184,6 +194,7 @@ static void CTU_DINT_init__(CTU_DINT_data__ *data__, BOOL retain) {
   R_TRIG_init__(&data__->CU_T,retain);
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void CTU_DINT_body__(CTU_DINT_data__ *data__) {
   // Control execution
@@ -210,6 +221,7 @@ static void CTU_DINT_body__(CTU_DINT_data__ *data__) {
 __end:
   return;
 } // CTU_DINT_body__() 
+#endif
 
 
 
@@ -226,6 +238,7 @@ static void CTU_LINT_init__(CTU_LINT_data__ *data__, BOOL retain) {
   R_TRIG_init__(&data__->CU_T,retain);
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void CTU_LINT_body__(CTU_LINT_data__ *data__) {
   // Control execution
@@ -252,6 +265,7 @@ static void CTU_LINT_body__(CTU_LINT_data__ *data__) {
 __end:
   return;
 } // CTU_LINT_body__() 
+#endif
 
 
 
@@ -268,6 +282,7 @@ static void CTU_UDINT_init__(CTU_UDINT_data__ *data__, BOOL retain) {
   R_TRIG_init__(&data__->CU_T,retain);
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void CTU_UDINT_body__(CTU_UDINT_data__ *data__) {
   // Control execution
@@ -294,6 +309,7 @@ static void CTU_UDINT_body__(CTU_UDINT_data__ *data__) {
 __end:
   return;
 } // CTU_UDINT_body__() 
+#endif
 
 
 
@@ -310,6 +326,7 @@ static void CTU_ULINT_init__(CTU_ULINT_data__ *data__, BOOL retain) {
   R_TRIG_init__(&data__->CU_T,retain);
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void CTU_ULINT_body__(CTU_ULINT_data__ *data__) {
   // Control execution
@@ -336,6 +353,7 @@ static void CTU_ULINT_body__(CTU_ULINT_data__ *data__) {
 __end:
   return;
 } // CTU_ULINT_body__() 
+#endif
 
 
 
@@ -352,6 +370,7 @@ static void CTD_init__(CTD_data__ *data__, BOOL retain) {
   R_TRIG_init__(&data__->CD_T,retain);
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void CTD_body__(CTD_data__ *data__) {
   // Control execution
@@ -378,6 +397,7 @@ static void CTD_body__(CTD_data__ *data__) {
 __end:
   return;
 } // CTD_body__() 
+#endif
 
 
 
@@ -394,6 +414,7 @@ static void CTD_DINT_init__(CTD_DINT_data__ *data__, BOOL retain) {
   R_TRIG_init__(&data__->CD_T,retain);
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void CTD_DINT_body__(CTD_DINT_data__ *data__) {
   // Control execution
@@ -420,6 +441,7 @@ static void CTD_DINT_body__(CTD_DINT_data__ *data__) {
 __end:
   return;
 } // CTD_DINT_body__() 
+#endif
 
 
 
@@ -436,6 +458,7 @@ static void CTD_LINT_init__(CTD_LINT_data__ *data__, BOOL retain) {
   R_TRIG_init__(&data__->CD_T,retain);
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void CTD_LINT_body__(CTD_LINT_data__ *data__) {
   // Control execution
@@ -462,6 +485,7 @@ static void CTD_LINT_body__(CTD_LINT_data__ *data__) {
 __end:
   return;
 } // CTD_LINT_body__() 
+#endif
 
 
 
@@ -478,6 +502,7 @@ static void CTD_UDINT_init__(CTD_UDINT_data__ *data__, BOOL retain) {
   R_TRIG_init__(&data__->CD_T,retain);
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void CTD_UDINT_body__(CTD_UDINT_data__ *data__) {
   // Control execution
@@ -504,6 +529,7 @@ static void CTD_UDINT_body__(CTD_UDINT_data__ *data__) {
 __end:
   return;
 } // CTD_UDINT_body__() 
+#endif
 
 
 
@@ -520,6 +546,7 @@ static void CTD_ULINT_init__(CTD_ULINT_data__ *data__, BOOL retain) {
   R_TRIG_init__(&data__->CD_T,retain);
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void CTD_ULINT_body__(CTD_ULINT_data__ *data__) {
   // Control execution
@@ -546,6 +573,7 @@ static void CTD_ULINT_body__(CTD_ULINT_data__ *data__) {
 __end:
   return;
 } // CTD_ULINT_body__() 
+#endif
 
 
 
@@ -566,6 +594,7 @@ static void CTUD_init__(CTUD_data__ *data__, BOOL retain) {
   R_TRIG_init__(&data__->CU_T,retain);
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void CTUD_body__(CTUD_data__ *data__) {
   // Control execution
@@ -603,6 +632,7 @@ static void CTUD_body__(CTUD_data__ *data__) {
 __end:
   return;
 } // CTUD_body__() 
+#endif
 
 
 
@@ -623,6 +653,7 @@ static void CTUD_DINT_init__(CTUD_DINT_data__ *data__, BOOL retain) {
   R_TRIG_init__(&data__->CU_T,retain);
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void CTUD_DINT_body__(CTUD_DINT_data__ *data__) {
   // Control execution
@@ -660,6 +691,7 @@ static void CTUD_DINT_body__(CTUD_DINT_data__ *data__) {
 __end:
   return;
 } // CTUD_DINT_body__() 
+#endif
 
 
 
@@ -680,6 +712,7 @@ static void CTUD_LINT_init__(CTUD_LINT_data__ *data__, BOOL retain) {
   R_TRIG_init__(&data__->CU_T,retain);
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void CTUD_LINT_body__(CTUD_LINT_data__ *data__) {
   // Control execution
@@ -717,6 +750,7 @@ static void CTUD_LINT_body__(CTUD_LINT_data__ *data__) {
 __end:
   return;
 } // CTUD_LINT_body__() 
+#endif
 
 
 
@@ -737,6 +771,7 @@ static void CTUD_UDINT_init__(CTUD_UDINT_data__ *data__, BOOL retain) {
   R_TRIG_init__(&data__->CU_T,retain);
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void CTUD_UDINT_body__(CTUD_UDINT_data__ *data__) {
   // Control execution
@@ -774,6 +809,7 @@ static void CTUD_UDINT_body__(CTUD_UDINT_data__ *data__) {
 __end:
   return;
 } // CTUD_UDINT_body__() 
+#endif
 
 
 
@@ -794,6 +830,7 @@ static void CTUD_ULINT_init__(CTUD_ULINT_data__ *data__, BOOL retain) {
   R_TRIG_init__(&data__->CU_T,retain);
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void CTUD_ULINT_body__(CTUD_ULINT_data__ *data__) {
   // Control execution
@@ -831,6 +868,7 @@ static void CTUD_ULINT_body__(CTUD_ULINT_data__ *data__) {
 __end:
   return;
 } // CTUD_ULINT_body__() 
+#endif
 
 
 
@@ -849,6 +887,7 @@ static void TP_init__(TP_data__ *data__, BOOL retain) {
   __INIT_VAR(data__->START_TIME,__time_to_timespec(1, 0, 0, 0, 0, 0),retain)
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void TP_body__(TP_data__ *data__) {
   // Control execution
@@ -891,6 +930,7 @@ __SET_VAR(data__->,CURRENT_TIME,,__CURRENT_TIME)
 __end:
   return;
 } // TP_body__() 
+#endif
 
 
 
@@ -909,6 +949,7 @@ static void TON_init__(TON_data__ *data__, BOOL retain) {
   __INIT_VAR(data__->START_TIME,__time_to_timespec(1, 0, 0, 0, 0, 0),retain)
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void TON_body__(TON_data__ *data__) {
   // Control execution
@@ -953,6 +994,7 @@ __SET_VAR(data__->,CURRENT_TIME,,__CURRENT_TIME)
 __end:
   return;
 } // TON_body__() 
+#endif
 
 
 
@@ -971,6 +1013,7 @@ static void TOF_init__(TOF_data__ *data__, BOOL retain) {
   __INIT_VAR(data__->START_TIME,__time_to_timespec(1, 0, 0, 0, 0, 0),retain)
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void TOF_body__(TOF_data__ *data__) {
   // Control execution
@@ -1013,6 +1056,7 @@ __SET_VAR(data__->,CURRENT_TIME,,__CURRENT_TIME)
 __end:
   return;
 } // TOF_body__() 
+#endif
 
 
 
@@ -1030,6 +1074,7 @@ static void DERIVATIVE_init__(DERIVATIVE_data__ *data__, BOOL retain) {
   __INIT_VAR(data__->X3,0,retain)
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void DERIVATIVE_body__(DERIVATIVE_data__ *data__) {
   // Control execution
@@ -1061,6 +1106,7 @@ static void DERIVATIVE_body__(DERIVATIVE_data__ *data__) {
 __end:
   return;
 } // DERIVATIVE_body__() 
+#endif
 
 
 
@@ -1075,6 +1121,7 @@ static void HYSTERESIS_init__(HYSTERESIS_data__ *data__, BOOL retain) {
   __INIT_VAR(data__->Q,0,retain)
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void HYSTERESIS_body__(HYSTERESIS_data__ *data__) {
   // Control execution
@@ -1100,6 +1147,7 @@ static void HYSTERESIS_body__(HYSTERESIS_data__ *data__) {
 __end:
   return;
 } // HYSTERESIS_body__() 
+#endif
 
 
 
@@ -1117,6 +1165,7 @@ static void INTEGRAL_init__(INTEGRAL_data__ *data__, BOOL retain) {
   __INIT_VAR(data__->XOUT,0,retain)
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void INTEGRAL_body__(INTEGRAL_data__ *data__) {
   // Control execution
@@ -1143,6 +1192,7 @@ static void INTEGRAL_body__(INTEGRAL_data__ *data__) {
 __end:
   return;
 } // INTEGRAL_body__() 
+#endif
 
 
 
@@ -1165,6 +1215,7 @@ static void PID_init__(PID_data__ *data__, BOOL retain) {
   DERIVATIVE_init__(&data__->DTERM,retain);
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void PID_body__(PID_data__ *data__) {
   // Control execution
@@ -1195,6 +1246,7 @@ static void PID_body__(PID_data__ *data__) {
 __end:
   return;
 } // PID_body__() 
+#endif
 
 
 
@@ -1214,6 +1266,7 @@ static void RAMP_init__(RAMP_data__ *data__, BOOL retain) {
   __INIT_VAR(data__->T,__time_to_timespec(1, 0, 0, 0, 0, 0),retain)
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void RAMP_body__(RAMP_data__ *data__) {
   // Control execution
@@ -1250,6 +1303,7 @@ static void RAMP_body__(RAMP_data__ *data__) {
 __end:
   return;
 } // RAMP_body__() 
+#endif
 
 
 
@@ -1267,6 +1321,7 @@ static void RTC_init__(RTC_data__ *data__, BOOL retain) {
   __INIT_VAR(data__->CURRENT_TIME,__dt_to_timespec(0, 0, 0, 1, 1, 1970),retain)
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void RTC_body__(RTC_data__ *data__) {
   // Control execution
@@ -1301,6 +1356,7 @@ __SET_VAR(data__->,CURRENT_TIME,,__CURRENT_TIME)
 __end:
   return;
 } // RTC_body__() 
+#endif
 
 
 
@@ -1315,6 +1371,7 @@ static void SEMA_init__(SEMA_data__ *data__, BOOL retain) {
   __INIT_VAR(data__->Q_INTERNAL,__BOOL_LITERAL(FALSE),retain)
 }
 
+#ifndef __POUS_INIT_ONLY__
 // Code part
 static void SEMA_body__(SEMA_data__ *data__) {
   // Control execution
@@ -1335,6 +1392,7 @@ static void SEMA_body__(SEMA_data__ *data__) {
 __end:
   return;
 } // SEMA_body__() 
+#endif
 
 
 

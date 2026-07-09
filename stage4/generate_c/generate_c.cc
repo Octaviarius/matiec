@@ -900,6 +900,10 @@ class generate_c_pous_c {
       /* Functions have no struct declaration in .h file */
       if (print_declaration) return;
 
+      /* Skip function bodies in init-only translation units (e.g. config.c):
+       * IEC functions are stateless and never called from constructors. */
+      s4o.print("#ifndef __POUS_INIT_ONLY__\n");
+
       /* (A) Function definition... */
       /* (A.1) Function return type */
       s4o.print("static ");
@@ -1043,11 +1047,12 @@ class generate_c_pous_c {
 
       s4o.indent_left();
       s4o.print(s4o.indent_spaces + "}\n\n\n");
-    
+      s4o.print("#endif\n");
+
       return;
     }
-    
-    
+
+
     /*******************/
     /* Function Blocks */
     /*******************/
@@ -1157,6 +1162,9 @@ class generate_c_pous_c {
         delete sfcdecl;
 
         /* (C.3) Function definition */
+        /* Skip the executable body in init-only translation units (e.g. config.c),
+         * which only need the constructor above. */
+        s4o.print("#ifndef __POUS_INIT_ONLY__\n");
         s4o.print("// Code part\n");
         /* function interface */
         s4o.print("static void ");
@@ -1225,7 +1233,8 @@ class generate_c_pous_c {
         symbol->fblock_name->accept(print_base);
         s4o.print(FB_FUNCTION_SUFFIX);
         s4o.print(s4o.indent_spaces + "() \n\n");
-      
+        s4o.print("#endif\n");
+
         s4o.indent_left();
         s4o.print("\n\n\n\n");
       }
@@ -1335,6 +1344,8 @@ class generate_c_pous_c {
         /* (C) Function with PROGRAM body */
 
         /* (C.3) Function definition */
+        /* Skip the executable body in init-only translation units (e.g. config.c). */
+        s4o.print("#ifndef __POUS_INIT_ONLY__\n");
         s4o.print("// Code part\n");
         /* function interface */
         s4o.print("static void ");
@@ -1369,7 +1380,8 @@ class generate_c_pous_c {
         symbol->program_type_name->accept(print_base);
         s4o.print(FB_FUNCTION_SUFFIX);
         s4o.print(s4o.indent_spaces + "() \n\n");
-      
+        s4o.print("#endif\n");
+
         s4o.indent_left();
         s4o.print("\n\n\n\n");
       }
@@ -1382,6 +1394,9 @@ class generate_c_pous_c {
       generate_c_vardecl_c          *vardecl;
       generate_c_base_and_typeid_c   print_base(&s4o);
 
+      /* IEC functions are stateless (no globals/externals) and are never called
+       * from constructors — skip them in init-only translation units. */
+      s4o.print("#ifndef __POUS_INIT_ONLY__\n");
       s4o.print("static ");
       symbol->type_name->accept(print_base);
       s4o.print(" ___");
@@ -1399,6 +1414,7 @@ class generate_c_pous_c {
       delete vardecl;
       s4o.indent_left();
       s4o.print(");\n");
+      s4o.print("#endif\n");
     }
 
     static void handle_function_block_fwd_decl(function_block_declaration_c *symbol, stage4out_c &s4o) {
@@ -1414,6 +1430,7 @@ class generate_c_pous_c {
       s4o.print(FB_FUNCTION_PARAM);
       s4o.print(", BOOL retain);\n");
 
+      s4o.print("#ifndef __POUS_INIT_ONLY__\n");
       s4o.print("static void ");
       symbol->fblock_name->accept(print_base);
       s4o.print(FB_FUNCTION_SUFFIX);
@@ -1423,6 +1440,7 @@ class generate_c_pous_c {
       s4o.print(" *");
       s4o.print(FB_FUNCTION_PARAM);
       s4o.print(");\n");
+      s4o.print("#endif\n");
     }
 
     static void handle_program_fwd_decl(program_declaration_c *symbol, stage4out_c &s4o) {
@@ -1438,6 +1456,7 @@ class generate_c_pous_c {
       s4o.print(FB_FUNCTION_PARAM);
       s4o.print(", BOOL retain);\n");
 
+      s4o.print("#ifndef __POUS_INIT_ONLY__\n");
       s4o.print("static void ");
       symbol->program_type_name->accept(print_base);
       s4o.print(FB_FUNCTION_SUFFIX);
@@ -1447,6 +1466,7 @@ class generate_c_pous_c {
       s4o.print(" *");
       s4o.print(FB_FUNCTION_PARAM);
       s4o.print(");\n");
+      s4o.print("#endif\n");
     }
 
 }; /* generate_c_pous_c */
@@ -1560,7 +1580,13 @@ void *visit(configuration_declaration_c *symbol) {
   delete vardecl;
   globals_s4o.print("\n");
 
-  s4o.print("#include \"POUS.c\"\n\n");
+  /* Configuration code never calls POU bodies (only global-FB constructors and
+   * resource init/run). Include POUS.c in init-only mode so this TU compiles the
+   * constructors it needs (e.g. RS_init__ for config-level global FB instances)
+   * but skips every POU/function body — those are compiled in the resource TUs. */
+  s4o.print("#define __POUS_INIT_ONLY__\n");
+  s4o.print("#include \"POUS.c\"\n");
+  s4o.print("#undef __POUS_INIT_ONLY__\n\n");
 
   /* (A.3) Declare global prototypes in include file */
   vardecl = new generate_c_vardecl_c(&s4o_incl,
