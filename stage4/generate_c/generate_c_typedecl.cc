@@ -540,33 +540,52 @@ void *visit(array_type_declaration_c *symbol) {
   // NOTE: remeber that symbol->array_spec_init may point to a derived_datatype_identifier_c, which is why we use symbol->array_spec_init->datatype instead!
   if (NULL == symbol->array_spec_init->datatype) ERROR;
   identifier_c *id = generate_datatypes_aliasid_c::create_id(symbol->array_spec_init->datatype);
-  
+
   /* NOTE  An array_type_declaration_c will be created in stage4 for each implicitly defined array,
    *       and this generate_c_typedecl_c will be called to define that array in C.
    *       However, every implictly defined array with the exact same parameters will be mapped
    *       to the same identifier (e.g: __ARRAY_OF_INT_33 where 33 is the number of elements in the array).
-   *       In order for the C compiler not to find the same datatype being defined two or more times, 
+   *       In order for the C compiler not to find the same datatype being defined two or more times,
    *       we will keep track of the array datatypes that have already been declared, and henceforth
    *       only declare arrays that have not been previously defined.
    */
-  if (datatypes_already_defined.find(id->value) != datatypes_already_defined.end())
-    goto end; // already defined. No need to define it again!!
-  datatypes_already_defined[id->value] = 1; // insert this datatype into the list of already defined arrays!
-  
-  current_typedefinition = array_td;
-  current_type_name = id;
+  if (datatypes_already_defined.find(id->value) == datatypes_already_defined.end()) {
+    datatypes_already_defined[id->value] = 1; // insert this datatype into the list of already defined arrays!
 
-  symbol->array_spec_init->accept(*this); // always calls array_spec_init_c
-  s4o_incl.print(")\n");
+    current_typedefinition = array_td;
+    current_type_name = id;
 
-  current_type_name = NULL;
-  current_typedefinition = none_td;
+    symbol->array_spec_init->accept(*this); // always calls array_spec_init_c
+    s4o_incl.print(")\n");
 
-end:  
-  symbol                 ->anotations_map["generate_c_annotaton__implicit_type_id"] = id;
-  symbol->datatype       ->anotations_map["generate_c_annotaton__implicit_type_id"] = id;
-  symbol->array_spec_init->anotations_map["generate_c_annotaton__implicit_type_id"] = id; // probably not needed, bu let's play safe.
-  
+    current_type_name = NULL;
+    current_typedefinition = none_td;
+  }
+
+  /* For an explicitly named IEC array type (e.g. TYPE MC_REAL_ARRAY : ARRAY [1..6] OF LREAL; END_TYPE)
+   * we additionally declare a C alias that maps the IEC name onto the structural array datatype declared
+   * above. This keeps the original IEC name in the generated C, while remaining assignment-compatible with
+   * any structurally-identical array (both end up being the same underlying C type through the typedef).
+   *   The implicit-array path (generate_c_implicit_typedecl_c) reuses this visitor, but passes the structural
+   * id itself as the array 'identifier'. In that case there is no IEC name to preserve, so we skip the alias
+   * (which would otherwise generate an invalid 'typedef X X;' self-typedef) and annotate with the structural id.
+   */
+  if (std::string(get_datatype_info_c::get_id_str(symbol->identifier)) != std::string(id->value)) {
+    s4o_incl.print("__DECLARE_ARRAY_DERIVED_TYPE(");
+    symbol->identifier->accept(*generate_c_typeid); // the IEC name, e.g. MC_REAL_ARRAY
+    s4o_incl.print(",");
+    id->accept(*generate_c_typeid);                 // the structural datatype, e.g. __ARRAY_OF_LREAL_6
+    s4o_incl.print(")\n");
+
+    symbol                 ->anotations_map["generate_c_annotaton__implicit_type_id"] = symbol->identifier;
+    symbol->datatype       ->anotations_map["generate_c_annotaton__implicit_type_id"] = symbol->identifier;
+    symbol->array_spec_init->anotations_map["generate_c_annotaton__implicit_type_id"] = symbol->identifier; // probably not needed, bu let's play safe.
+  } else {
+    symbol                 ->anotations_map["generate_c_annotaton__implicit_type_id"] = id;
+    symbol->datatype       ->anotations_map["generate_c_annotaton__implicit_type_id"] = id;
+    symbol->array_spec_init->anotations_map["generate_c_annotaton__implicit_type_id"] = id; // probably not needed, bu let's play safe.
+  }
+
   return NULL;
 }
 

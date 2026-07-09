@@ -40,4 +40,8 @@
 #define __DECLARE_DERIVED_TYPE(name, base) \
   (#name, TypeClass.DERIVED, #base),
 
+/* A named array type is described as a derived alias of its structural array type. */
+#define __DECLARE_ARRAY_DERIVED_TYPE(name, base) \
+  (#name, TypeClass.DERIVED, #base),
+
 #define __DECLARE_REFTO_TYPE(type, name)

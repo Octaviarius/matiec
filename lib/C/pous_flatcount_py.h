@@ -50,5 +50,9 @@ type##__flat_count = 1;
 #define __DECLARE_DERIVED_TYPE(type, base) \
 type##__flat_count = base##__flat_count;
 
+#define __DECLARE_ARRAY_DERIVED_TYPE(type, base) \
+type##__flat_count = base##__flat_count;\
+type##__elem_count = base##__elem_count;
+
 #define __DECLARE_REFTO_TYPE(type, name)
 

@@ -57,6 +57,13 @@ __ANY(__decl_flat_count)
   enum { type##_ENUM = base##_ENUM }; \
   enum { type##_P_ENUM = base##_P_ENUM };
 
+/* Alias of an array datatype: inherit the base array's counts and type_enum
+ * (arrays use __type_enum/__elem_count, not the scalar _ENUM). */
+#define __DECLARE_ARRAY_DERIVED_TYPE(type, base) \
+  enum { type##__flat_count = base##__flat_count }; \
+  enum { type##__elem_count = base##__elem_count }; \
+  enum { type##__type_enum = ARRAY_ENUM };
+
 #define __DECLARE_REFTO_TYPE(type, name) \
   enum { type##_ENUM = base##_P_ENUM };
 

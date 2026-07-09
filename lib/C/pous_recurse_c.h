@@ -177,3 +177,11 @@
 #define __DECLARE_ENUMERATED_TYPE(type, ...)
 #define __DECLARE_DERIVED_TYPE(type, base)
 #define __DECLARE_REFTO_TYPE(type, name)
+
+/* Array alias: 'type' is a typedef of the array 'base', so its traversal is the
+ * base array's traversal. Forward to it (base##__recurse is defined just above). */
+#define __DECLARE_ARRAY_DERIVED_TYPE(type, base) \
+  static inline int type##__recurse(type *p, __recurse_cb_t cb, \
+      void *userdata, unsigned int *cumulated) { \
+    return base##__recurse(p, cb, userdata, cumulated); \
+  }

@@ -38,6 +38,14 @@ typedef struct {\
 } type;\
 __DECLARE_COMPLEX_STRUCT(type)
 
+/* Alias an explicitly named IEC array type (e.g. MC_REAL_ARRAY) onto its structural
+ * array datatype (e.g. __ARRAY_OF_LREAL_6), so it keeps the IEC name while remaining
+ * the very same underlying C type (and thus assignment-compatible). */
+#define __DECLARE_ARRAY_DERIVED_TYPE(type, base)\
+typedef base type;\
+typedef __IEC_##base##_t __IEC_##type##_t;\
+typedef __IEC_##base##_p __IEC_##type##_p;
+
 #define __DECLARE_STRUCT_TYPE(type, elements)\
 typedef struct {\
   elements\
