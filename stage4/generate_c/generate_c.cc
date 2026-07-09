@@ -1560,6 +1560,8 @@ void *visit(configuration_declaration_c *symbol) {
   delete vardecl;
   globals_s4o.print("\n");
 
+  s4o.print("#include \"POUS.c\"\n\n");
+
   /* (A.3) Declare global prototypes in include file */
   vardecl = new generate_c_vardecl_c(&s4o_incl,
                                      generate_c_vardecl_c::globalprototype_vf,
