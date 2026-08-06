@@ -2157,7 +2157,14 @@ void  append_bodystate_buffer(const char *text, int is_whitespace) {
   // printf("<<<append_bodystate_buffer>>> %d <%s><%s>\n", bodystate_buffer, text, (NULL != bodystate_buffer)?bodystate_buffer:"NULL");
   long int old_len = 0;
   // make backup of tracking if we are starting off a new body_state_buffer
-  if (NULL == bodystate_buffer) bodystate_init_tracking = *current_tracking;
+  // NOTE: we must use previous_tracking (the snapshot taken by YY_USER_ACTION _before_
+  //       UpdateTracking() consumed yytext), and _not_ current_tracking. The latter already
+  //       points to the end of the text we are appending, so the line/column of any newline
+  //       inside that first token would get counted a second time when the buffer is later
+  //       returned to flex by unput_bodystate_buffer() and re-scanned.
+  //       This used to shift the reported line numbers of every POU whose body starts with a
+  //       multi-line pragma (e.g. a '{{ ... }}' verbatim C code block).
+  if (NULL == bodystate_buffer) bodystate_init_tracking = previous_tracking;
   // set bodystate_is_whitespace flag if we are starting a new buffer
   if (NULL == bodystate_buffer) bodystate_is_whitespace = 1;
   // set bodystate_is_whitespace flag to FALSE if we are adding non white space to buffer
