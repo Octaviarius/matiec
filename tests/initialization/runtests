@@ -2,10 +2,12 @@
 
 # Test the datatype checking of the initial values of structured and array variables.
 #
-#   ok_*.st    --> must be accepted by the compiler.
+#   ok_*.st    --> must be accepted by the compiler, and the C code it generates must
+#                  compile without a single warning. Note that an invalid initial value
+#                  usually still produces C code, only badly braced C code, so compiling
+#                  it is the only way to catch it.
 #   bad_*.st   --> must be rejected by the compiler, with an error message.
-#                  Aborting with an 'Internal compiler error' is considered a failure,
-#                  as is generating C code for an invalid initial value!
+#                  Aborting with an 'Internal compiler error' is considered a failure!
 #   xfail_*.st --> valid code that the compiler is known not to handle (yet).
 #                  Reported as [XFAIL], and as [XPASS] once it starts working,
 #                  in which case it should be renamed to ok_*.st.
@@ -14,13 +16,33 @@ IEC2C="../../iec2c"
 IEC2C_FLAGS="-f -l -p -I ../../lib"
 OUTDIR="./output"
 
+CC=${CC:-gcc}
+# Only the code we generate is of interest here, so we silence the warnings coming
+# from the standard library headers by only looking at diagnostics on our own files.
+CC_FLAGS="-fsyntax-only -Wall -Wextra -Wno-unused -I. -I../../../lib/C"
+GENERATED="^(POUS|config|resource[0-9]*)\.[ch]:"
+
 # assume no error to start with...
 error=0
+
+# Compile the C code we just generated. Echoes the diagnostics, if any.
+# NOTE: POUS.c is not compiled on its own, it is #include'd by all the files below!
+compile_generated_c() {
+  local cfile
+  for cfile in `ls $OUTDIR/*.c 2> /dev/null | grep -v "/POUS\.c$"`
+  do
+    (cd $OUTDIR && $CC $CC_FLAGS `basename $cfile` 2>&1) | grep -E "$GENERATED"
+  done
+}
+
+if ! type $CC > /dev/null 2>&1
+  then echo "NOTE: '$CC' not found, the generated C code will not be compiled."; CC=""
+fi
 
 rm -rf $OUTDIR
 mkdir -p $OUTDIR
 
-for ff in `ls ok_*.st bad_*.st xfail_*.st`
+for ff in `ls ok_*.st bad_*.st xfail_*.st 2> /dev/null`
 do
   rm -rf $OUTDIR/*
   $IEC2C $IEC2C_FLAGS -T $OUTDIR $ff > $ff.out 2> $ff.err
@@ -38,12 +60,21 @@ do
     *)     expected_status=0 ;;
   esac
 
+  cc_diagnostics=""
+  if test -n "$CC" -a $status = 0
+    then cc_diagnostics=`compile_generated_c`
+  fi
+
   if grep -q "Internal compiler error" $ff.err
     then echo "[ERROR]   " $ff "-> internal compiler error"; error=1
   elif test $expected_status = 0 -a $status != 0
     then echo "[ERROR]   " $ff "-> should have been accepted"; error=1
   elif test $expected_status = 1 -a $status = 0
     then echo "[ERROR]   " $ff "-> should have been rejected"; error=1
+  elif test -n "$cc_diagnostics"
+    then echo "[ERROR]   " $ff "-> the generated C code does not compile cleanly:"
+         echo "$cc_diagnostics" | sed "s/^/             /"
+         error=1
   else echo "[ O K ]   " $ff
   fi
 done

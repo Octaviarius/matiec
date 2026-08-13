@@ -77,6 +77,9 @@ class generate_c_array_initialization_c: public generate_c_base_and_typeid_c {
     symbol_c* array_default_value;
     symbol_c* array_default_initialization;
     bool wrap_elements;
+    /* Whether the elements stored in the array are themselves arrays. Each of them then */
+    /* needs a complete (nested) array initializer of its own, see print_element_value(). */
+    bool elements_are_arrays;
 
   private:
     int current_dimension;
@@ -105,12 +108,15 @@ class generate_c_array_initialization_c: public generate_c_base_and_typeid_c {
       array_dimensions.clear();
       array_base_type = array_default_value = array_default_initialization = NULL;
       wrap_elements = false;
+      elements_are_arrays = false;
 
       current_mode = arraysize_am;
       array_specification->accept(*this);
 
       if (array_base_type != NULL) {
         symbol_c *elem_basetype = search_base_type_c::get_basetype_decl(array_base_type);
+        elements_are_arrays = (elem_basetype != NULL)
+            && get_datatype_info_c::is_array(elem_basetype);
         wrap_elements = (elem_basetype != NULL)
             && !get_datatype_info_c::is_array(elem_basetype)
             && !get_datatype_info_c::is_structure(elem_basetype);
@@ -141,9 +147,21 @@ class generate_c_array_initialization_c: public generate_c_base_and_typeid_c {
 
     void print_element_value(symbol_c *value) {
       print_element_separator();
-      if (wrap_elements) s4o.print("{0,");
-      value->accept(*this);
-      if (wrap_elements) s4o.print("}");
+      if (elements_are_arrays) {
+        /* The elements are themselves arrays (e.g. ARRAY [1..2] OF arr_dint), and are stored */
+        /* in C as a nested struct, so each of them needs a complete initializer of its own.   */
+        /* Delegate it to a new generator, just like we do for structured elements, so that    */
+        /* our own element counters (and brace nesting) are left undisturbed.                  */
+        generate_c_array_initialization_c *array_initialization = new generate_c_array_initialization_c(&s4o);
+        array_initialization->init_array_size(array_base_type);
+        array_initialization->init_array_values(value);
+        delete array_initialization;
+      }
+      else {
+        if (wrap_elements) s4o.print("{0,");
+        value->accept(*this);
+        if (wrap_elements) s4o.print("}");
+      }
       emitted_count++;
     }
 
