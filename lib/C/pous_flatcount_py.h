@@ -25,6 +25,8 @@ __ANY(__decl_flat_count)
 #define __DECLARE_EXTERNAL_STRUCT(type, name)     + type##__flat_count
 #define __DECLARE_EXTERNAL_FB(type, name)         + type##__flat_count
 #define __DECLARE_LOCATED(type, name)             + type##__flat_count
+#define __DECLARE_LOCATED_ARRAY(type, name)       + type##__flat_count
+#define __DECLARE_LOCATED_STRUCT(type, name)      + type##__flat_count
 
 /* Type macros produce enum constant declarations */
 #define __DECLARE_ARRAY_TYPE(type, base, dims)\

@@ -173,6 +173,14 @@
   if (ret == 0) return 0; if (ret == -2) return 1; \
   *cumulated += 1; local += 1;
 
+/* Located array (pointer): callback + recurse via pointer .value */
+#define __DECLARE_LOCATED_ARRAY(type, name) \
+  __DECLARE_EXTERNAL_ARRAY(type, name)
+
+/* Located struct (pointer): callback + recurse via pointer .value */
+#define __DECLARE_LOCATED_STRUCT(type, name) \
+  __DECLARE_EXTERNAL_STRUCT(type, name)
+
 /* No-ops in recurse mode */
 #define __DECLARE_ENUMERATED_TYPE(type, ...)
 #define __DECLARE_DERIVED_TYPE(type, base)

@@ -125,6 +125,10 @@ __DECLARE_COMPLEX_STRUCT(type)
 	type##_data__* name;
 #define __DECLARE_LOCATED(type, name)\
 	__IEC_##type##_p name;
+#define __DECLARE_LOCATED_ARRAY(type, name)\
+	__IEC_##type##_p name;
+#define __DECLARE_LOCATED_STRUCT(type, name)\
+	__IEC_##type##_p name;
 #define __DECLARE_PROGRAM_INSTANCE(type, resource, name)\
 	type##_data__ resource##__##name;
 #define __DECLARE_CONFIGURATION(configuration_name, tick_time)

@@ -1886,16 +1886,26 @@ void *visit(located_var_decl_c *symbol) {
   /* now to produce the c equivalent... */
   switch(wanted_varformat) {
     case local_vf:
-      s4o.print(s4o.indent_spaces);
-      s4o.print(DECLARE_LOCATED);
-      s4o.print("(");
-      this->current_var_type_symbol->accept(*this);
-      s4o.print(",");
-      if (symbol->variable_name != NULL)
-        symbol->variable_name->accept(*this);
-      else
-        symbol->location->accept(*this);
-      s4o.print(")\n");
+      {
+        symbol_c *var_basetype = search_base_type_c::get_basetype_decl(this->current_var_type_symbol);
+        bool is_array  = (var_basetype != NULL) && get_datatype_info_c::is_array(var_basetype);
+        bool is_struct = (var_basetype != NULL) && get_datatype_info_c::is_structure(var_basetype);
+        s4o.print(s4o.indent_spaces);
+        if (is_array)
+          s4o.print(DECLARE_LOCATED_ARRAY);
+        else if (is_struct)
+          s4o.print(DECLARE_LOCATED_STRUCT);
+        else
+          s4o.print(DECLARE_LOCATED);
+        s4o.print("(");
+        this->current_var_type_symbol->accept(*this);
+        s4o.print(",");
+        if (symbol->variable_name != NULL)
+          symbol->variable_name->accept(*this);
+        else
+          symbol->location->accept(*this);
+        s4o.print(")\n");
+      }
       break;
 
     case constructorinit_vf:

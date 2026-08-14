@@ -17,6 +17,8 @@
 #define __DECLARE_EXTERNAL_STRUCT(type, name)     (#name, #type),
 #define __DECLARE_EXTERNAL_FB(type, name)         (#name, #type),
 #define __DECLARE_LOCATED(type, name)             (#name, #type),
+#define __DECLARE_LOCATED_ARRAY(type, name)       (#name, #type),
+#define __DECLARE_LOCATED_STRUCT(type, name)      (#name, #type),
 
 /* Type macros */
 #define __DECLARE_STRUCT_TYPE(name, members) \
