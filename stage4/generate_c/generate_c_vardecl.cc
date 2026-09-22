@@ -2207,8 +2207,16 @@ void *visit(global_var_spec_c *symbol) {
       symbol->location->accept(*this);
       s4o.print(")\n");
       if (symbol->global_var_name != NULL) {
+        symbol_c *var_basetype = search_base_type_c::get_basetype_decl(this->current_var_type_symbol);
+        bool is_array  = (var_basetype != NULL) && get_datatype_info_c::is_array(var_basetype);
+        bool is_struct = (var_basetype != NULL) && get_datatype_info_c::is_structure(var_basetype);
         s4o.print(s4o.indent_spaces);
-        s4o.print(DECLARE_GLOBAL_LOCATED);
+        if (is_array)
+          s4o.print(DECLARE_GLOBAL_LOCATED_ARRAY);
+        else if (is_struct)
+          s4o.print(DECLARE_GLOBAL_LOCATED_STRUCT);
+        else
+          s4o.print(DECLARE_GLOBAL_LOCATED);
         s4o.print("(");
         this->current_var_type_symbol->accept(*this);
         s4o.print(",");

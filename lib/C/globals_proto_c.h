@@ -16,6 +16,8 @@
 #undef __DECLARE_GLOBAL_FB
 #undef __DECLARE_GLOBAL_LOCATION
 #undef __DECLARE_GLOBAL_LOCATED
+#undef __DECLARE_GLOBAL_LOCATED_ARRAY
+#undef __DECLARE_GLOBAL_LOCATED_STRUCT
 #undef __DECLARE_PROGRAM_INSTANCE
 #undef __DECLARE_CONFIGURATION
 
@@ -25,5 +27,7 @@
 #define __DECLARE_GLOBAL_FB(type, domain, name)        __DECLARE_GLOBAL_PROTOTYPE_FB(type, name)
 #define __DECLARE_GLOBAL_LOCATION(type, location)
 #define __DECLARE_GLOBAL_LOCATED(type, resource, name) __DECLARE_GLOBAL_PROTOTYPE(type, name)
+#define __DECLARE_GLOBAL_LOCATED_ARRAY(type, resource, name) __DECLARE_GLOBAL_PROTOTYPE(type, name)
+#define __DECLARE_GLOBAL_LOCATED_STRUCT(type, resource, name) __DECLARE_GLOBAL_PROTOTYPE(type, name)
 #define __DECLARE_PROGRAM_INSTANCE(type, resource, name)
 #define __DECLARE_CONFIGURATION(configuration_name, tick_time)

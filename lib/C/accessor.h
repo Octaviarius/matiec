@@ -111,6 +111,10 @@ __DECLARE_COMPLEX_STRUCT(type)
 	GLOBAL_CAST type* __GET_GLOBAL_##name(void) {\
 		return (*GLOBAL__##name).value;\
 	}
+#define __DECLARE_GLOBAL_LOCATED_ARRAY(type, resource, name)\
+	__DECLARE_GLOBAL_LOCATED(type, resource, name)
+#define __DECLARE_GLOBAL_LOCATED_STRUCT(type, resource, name)\
+	__DECLARE_GLOBAL_LOCATED(type, resource, name)
 #define __DECLARE_GLOBAL_PROTOTYPE(type, name)\
     extern type* __GET_GLOBAL_##name(void);
 #define __DECLARE_GLOBAL_PROTOTYPE_FB(type, name)\
